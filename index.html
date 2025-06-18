@@ -1,0 +1,2496 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Client Management System</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide-react@0.368.0/dist/lucide-react.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Font Awesome for additional icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <style>
+        /* Base styles */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        .dark ::-webkit-scrollbar-track {
+            background: #2d3748;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        
+        /* Animation for modals */
+        .modal-enter {
+            animation: fadeIn 0.3s ease-out;
+        }
+        .modal-leave {
+            animation: fadeOut 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; transform: scale(1); }
+            to { opacity: 0; transform: scale(0.95); }
+        }
+
+        /* Prevent layout shift during theme change */
+        .theme-transition {
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        
+        /* Custom card styling for a bit of flair */
+        .status-tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-weight: 500;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Accordion styles */
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-in-out;
+        }
+
+        /* Card details expansion */
+        .card-details {
+             max-height: 0;
+             overflow: hidden;
+             transition: max-height 0.5s ease-in-out, padding-top 0.5s ease-in-out, margin-top 0.5s ease-in-out;
+             padding-top: 0;
+             margin-top: 0;
+        }
+        .card-details.expanded {
+            max-height: 800px; /* Increased for additional content */
+            padding-top: 1rem;
+            margin-top: 1rem;
+        }
+        
+        /* Communication timeline styles */
+        .timeline-item {
+            position: relative;
+            padding-left: 2rem;
+            border-left: 2px solid #e5e7eb;
+        }
+        .dark .timeline-item {
+            border-left-color: #4b5563;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -5px;
+            top: 0;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #3b82f6;
+        }
+        
+        /* Quick note styles */
+        .quick-note-card {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border: 1px solid #fbbf24;
+        }
+        .dark .quick-note-card {
+            background: linear-gradient(135deg, #78350f 0%, #92400e 100%);
+            border-color: #d97706;
+        }
+        
+        /* Keyboard shortcuts modal */
+        .kbd {
+            background-color: #eee;
+            border-radius: 3px;
+            border: 1px solid #b4b4b4;
+            box-shadow: 0 1px 1px rgba(0, 0, 0, .2), 0 2px 0 0 rgba(255, 255, 255, .7) inset;
+            color: #333;
+            display: inline-block;
+            font-size: .85em;
+            font-weight: 700;
+            line-height: 1;
+            padding: 2px 4px;
+            white-space: nowrap;
+        }
+        .dark .kbd {
+            background-color: #4b5563;
+            border-color: #6b7280;
+            color: #f3f4f6;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 theme-transition">
+
+    <!-- App Container -->
+    <div id="app" class="min-h-screen flex flex-col">
+
+        <!-- Header -->
+        <header class="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-40 theme-transition">
+            <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <svg class="w-8 h-8 text-blue-600 dark:text-blue-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M4 22C4 17.5817 7.58172 14 12 14C16.4183 14 20 17.5817 20 22H4ZM12 13C8.68629 13 6 10.3137 6 7C6 3.68629 8.68629 1 12 1C15.3137 1 18 3.68629 18 7C18 10.3137 15.3137 13 12 13Z"></path></svg>
+                    <h1 class="text-xl md:text-2xl font-bold text-gray-800 dark:text-white">Client Management Hub</h1>
+                </div>
+                <div class="flex-1 max-w-lg mx-4 hidden sm:block">
+                     <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+                            <svg class="w-5 h-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        </span>
+                        <input type="text" id="searchInput" placeholder="Search by name, tag, note, or press '/' for advanced..." class="w-full pl-10 pr-10 py-2 border rounded-full bg-gray-100 dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <button id="clearSearchBtn" class="absolute inset-y-0 right-0 flex items-center pr-3 hidden">
+                            <svg class="w-5 h-5 text-gray-400 hover:text-gray-600 cursor-pointer" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </button>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button id="quickNoteBtn" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition duration-300" title="Quick Note (Ctrl+N)">
+                        <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M20 2C20.5523 2 21 2.44772 21 3V6.757L19 8.757V4H5V20H19V17.242L21 15.242V21C21 21.5523 20.5523 22 20 22H4C3.44772 22 3 21.5523 3 21V3C3 2.44772 3.44772 2 4 2H20ZM21.7782 8.80761L23.1924 10.2218L15.4142 18L13.9979 17.9979L14 16.5858L21.7782 8.80761ZM13 12V14H8V12H13ZM16 8V10H8V8H16Z"></path></svg>
+                    </button>
+                    <button id="addProspectBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 flex items-center space-x-2">
+                        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M11 11V5H13V11H19V13H13V19H11V13H5V11H11Z"></path></svg>
+                        <span class="hidden md:inline">New Prospect</span>
+                    </button>
+                    <button id="theme-toggle" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition duration-300">
+                        <svg id="theme-icon-light" class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.25a.75.75 0 0 1 .75.75v2.25a.75.75 0 0 1-1.5 0V3a.75.75 0 0 1 .75-.75ZM7.5 12a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM18.697 19.823a.75.75 0 0 1 1.06-1.06l1.591 1.59a.75.75 0 1 1-1.06 1.06l-1.591-1.59ZM21.75 12a.75.75 0 0 1-.75.75h-2.25a.75.75 0 0 1 0-1.5h2.25a.75.75 0 0 1 .75.75ZM17.636 6.364a.75.75 0 0 1-1.06-1.06l1.591-1.591a.75.75 0 1 1 1.06 1.06l-1.591 1.591ZM12 21.75a.75.75 0 0 1-.75-.75v-2.25a.75.75 0 0 1 1.5 0v2.25a.75.75 0 0 1-.75.75ZM4.177 18.697a.75.75 0 0 1-1.06-1.06l1.59-1.591a.75.75 0 1 1 1.06 1.06l-1.59 1.591ZM3 12a.75.75 0 0 1 .75-.75h2.25a.75.75 0 0 1 0 1.5H3.75A.75.75 0 0 1 3 12ZM6.364 6.364a.75.75 0 0 1 1.06-1.06l1.591 1.591a.75.75 0 1 1-1.06 1.06L6.364 6.364Z"></path></svg>
+                        <svg id="theme-icon-dark" class="w-6 h-6 hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M9.528 1.718a.75.75 0 0 1 .162.819A8.97 8.97 0 0 0 9 6a9 9 0 0 0 9 9 8.97 8.97 0 0 0 3.463-.69.75.75 0 0 1 .981.98 10.503 10.503 0 0 1-9.694 6.46c-5.799 0-10.5-4.701-10.5-10.5 0-4.368 2.667-8.112 6.46-9.694a.75.75 0 0 1 .818.162Z" clip-rule="evenodd"></path></svg>
+                    </button>
+                    <button id="keyboardShortcutsBtn" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition duration-300" title="Keyboard Shortcuts (?)">
+                        <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17H9V19H3V17ZM3 11H11V13H3V11ZM3 5H21V7H3V5ZM15 19V14H21V19H15ZM17 17H19V16H17V17Z"></path></svg>
+                    </button>
+                    <button id="toggleWonLostBtn" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition duration-300" title="Show/Hide Won/Lost">
+                        <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"></path></svg>
+                    </button>
+                </div>
+            </div>
+            <!-- Mobile Search Bar -->
+            <div class="px-4 pb-3 sm:hidden">
+                <input type="text" id="mobileSearchInput" placeholder="Search..." class="w-full px-4 py-2 border rounded-full bg-gray-100 dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-1 container mx-auto p-4">
+            <!-- Navigation Tabs -->
+            <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
+                <nav class="-mb-px flex space-x-6 overflow-x-auto" aria-label="Tabs">
+                    <a href="#" id="prospectsTab" class="tab-link border-blue-500 text-blue-600 dark:text-blue-400 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Prospects</a>
+                    <a href="#" id="clientsTab" class="tab-link border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:border-gray-500 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Clients</a>
+                    <a href="#" id="tasksTab" class="tab-link border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:border-gray-500 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Task Manager</a>
+                    <a href="#" id="pipelineTab" class="tab-link border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:border-gray-500 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Sales Pipeline</a>
+                    <a href="#" id="comparisonTab" class="tab-link border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:border-gray-500 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Quote Comparison</a>
+                    <a href="#" id="templatesTab" class="tab-link border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:border-gray-500 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Email Templates</a>
+                    <a href="#" id="analyticsTab" class="tab-link border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:border-gray-500 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Analytics</a>
+                </nav>
+            </div>
+
+            <!-- Content Panes -->
+            <div id="prospectsView" class="tab-pane">
+                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="prospectsContainer"></div>
+            </div>
+            <div id="clientsView" class="tab-pane hidden">
+                <div class="mb-6 flex justify-between items-center">
+                    <h2 class="text-2xl font-bold">Active Clients</h2>
+                    <button id="addClientBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 flex items-center space-x-2">
+                        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M11 11V5H13V11H19V13H13V19H11V13H5V11H11Z"></path></svg>
+                        <span>Add Client</span>
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="clientsContainer"></div>
+            </div>
+            <div id="tasksView" class="tab-pane hidden">
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+                         <h2 class="text-2xl font-bold mb-4 md:mb-0">Task Manager</h2>
+                         <div class="flex space-x-2">
+                            <select id="taskFilterPriority" class="px-3 py-2 border rounded-lg bg-gray-100 dark:bg-gray-700 dark:border-gray-600">
+                                <option value="">All Priorities</option>
+                                <option value="High">High</option>
+                                <option value="Medium">Medium</option>
+                                <option value="Low">Low</option>
+                            </select>
+                            <select id="taskFilterStatus" class="px-3 py-2 border rounded-lg bg-gray-100 dark:bg-gray-700 dark:border-gray-600">
+                                <option value="">All Status</option>
+                                <option value="Pending">Pending</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="Completed">Completed</option>
+                            </select>
+                            <button id="addTaskBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 flex items-center space-x-2">
+                                <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M11 11V5H13V11H19V13H13V19H11V13H5V11H11Z"></path></svg>
+                                <span>Add Task</span>
+                            </button>
+                         </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="tasksContainer">
+                        <!-- Task cards will be rendered here -->
+                    </div>
+                    <div id="bulkActionsBar" class="hidden mt-4 p-4 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-between">
+                        <span class="text-sm"><span id="selectedCount">0</span> tasks selected</span>
+                        <div class="space-x-2">
+                            <button id="bulkCompleteBtn" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm">Mark Complete</button>
+                            <button id="bulkDeleteBtn" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm">Delete</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+             <div id="pipelineView" class="tab-pane hidden">
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
+                    <h2 class="text-2xl font-bold mb-6">Sales Pipeline</h2>
+                    <div class="flex space-x-4 overflow-x-auto pb-4" id="pipelineContainer">
+                        <!-- Pipeline stages will be dynamically created here -->
+                    </div>
+                </div>
+            </div>
+            <div id="comparisonView" class="tab-pane hidden">
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
+                    <h2 class="text-2xl font-bold mb-6">Quote Comparison Tool</h2>
+                    <div id="quote-comparison-tool">
+                        <div id="comparison-prospects" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6"></div>
+                        <button id="compare-selected" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full disabled:bg-gray-400" disabled>Compare Selected</button>
+                        <div id="comparison-results" class="mt-6 overflow-x-auto"></div>
+                    </div>
+                </div>
+            </div>
+            <div id="templatesView" class="tab-pane hidden">
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold">Email Templates</h2>
+                        <button id="addTemplateBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 flex items-center space-x-2">
+                            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M11 11V5H13V11H19V13H13V19H11V13H5V11H11Z"></path></svg>
+                            <span>New Template</span>
+                        </button>
+                    </div>
+                    <div id="templatesContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <!-- Email templates will be rendered here -->
+                    </div>
+                </div>
+            </div>
+            <div id="analyticsView" class="tab-pane hidden">
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
+                    <h2 class="text-2xl font-bold mb-6">Analytics Dashboard</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                            <h3 class="text-lg font-semibold mb-4">Prospects vs Clients</h3>
+                            <canvas id="prospectsClientsChart"></canvas>
+                        </div>
+                        <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                            <h3 class="text-lg font-semibold mb-4">Task Status Overview</h3>
+                            <canvas id="taskStatusChart"></canvas>
+                        </div>
+                        <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg col-span-full">
+                            <h3 class="text-lg font-semibold mb-4">Monthly Activity</h3>
+                            <canvas id="monthlyActivityChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer with Quick Notes -->
+        <footer class="bg-white dark:bg-gray-800 border-t dark:border-gray-700 p-4">
+            <div class="container mx-auto">
+                <div class="flex items-center justify-between">
+                    <div class="text-sm text-gray-500 dark:text-gray-400">
+                        <button id="importDataBtn" class="hover:text-gray-700 dark:hover:text-gray-200 mr-4">Import Data</button>
+                        <button id="exportDataBtn" class="hover:text-gray-700 dark:hover:text-gray-200">Export Data</button>
+                        <input type="file" id="importFile" accept=".json" class="hidden">
+                    </div>
+                    <div class="text-sm text-gray-500 dark:text-gray-400">
+                        <span id="quickNotesCount">0</span> Quick Notes
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Enhanced Prospect/Client Modal with Communication Tracking -->
+    <div id="prospectModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-lg bg-white dark:bg-gray-800 modal-enter">
+            <h2 id="modalTitle" class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Add New Prospect</h2>
+            <form id="prospectForm">
+                <input type="hidden" id="prospectId">
+                
+                <!-- Basic Information Accordion -->
+                <div class="mb-4">
+                    <button type="button" class="accordion-trigger w-full flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <span class="font-semibold">Basic Information</span>
+                        <svg class="w-5 h-5 transition-transform" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 15.6315L20.9679 10.8838L20.0321 9.11619L12 13.3685L3.96788 9.11619L3.0321 10.8838L12 15.6315Z"></path></svg>
+                    </button>
+                    <div class="accordion-content" style="max-height: 1000px;">
+                        <div class="p-4 space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name *</label>
+                                <input type="text" id="name" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                                    <input type="email" id="email" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone</label>
+                                    <input type="tel" id="phone" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
+                                <select id="status" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                                    <option value="New">New</option>
+                                    <option value="Contacted">Contacted</option>
+                                    <option value="Follow-up">Follow-up</option>
+                                    <option value="Interested">Interested</option>
+                                    <option value="Not Interested">Not Interested</option>
+                                    <option value="Needs Analysis">Needs Analysis</option>
+                                    <option value="Proposal Sent">Proposal Sent</option>
+                                    <option value="Negotiation">Negotiation</option>
+                                    <option value="Won">Won</option>
+                                    <option value="Lost">Lost</option>
+                                    <option value="Active">Active (Client)</option>
+                                    <option value="Inactive">Inactive (Client)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tags (comma-separated)</label>
+                                <input type="text" id="tags" placeholder="e.g., premium, referral, hot-lead" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes</label>
+                                <textarea id="notes" rows="3" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">OneDrive Folder Link</label>
+                                <input type="url" id="onedrive-link" placeholder="https://onedrive.live.com/..." class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quote Information Accordion -->
+                <div class="mb-4">
+                    <button type="button" class="accordion-trigger w-full flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <span class="font-semibold">Quote Information</span>
+                        <svg class="w-5 h-5 transition-transform" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 15.6315L20.9679 10.8838L20.0321 9.11619L12 13.3685L3.96788 9.11619L3.0321 10.8838L12 15.6315Z"></path></svg>
+                    </button>
+                    <div class="accordion-content">
+                        <div class="p-4 space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Quote Status</label>
+                                    <select id="quote-status" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                                        <option value="">Not Quoted</option>
+                                        <option value="pending">Pending</option>
+                                        <option value="sent">Sent</option>
+                                        <option value="accepted">Accepted</option>
+                                        <option value="rejected">Rejected</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Quoted Premium</label>
+                                    <input type="number" id="quoted-premium" step="0.01" min="0" placeholder="0.00" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Policy Type</label>
+                                <select id="policy-type" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                                    <option value="">Select Type</option>
+                                    <option value="auto">Auto</option>
+                                    <option value="home">Home</option>
+                                    <option value="life">Life</option>
+                                    <option value="health">Health</option>
+                                    <option value="business">Business</option>
+                                    <option value="other">Other</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Policy Details Accordion (for clients) -->
+                <div class="mb-4 client-only hidden">
+                    <button type="button" class="accordion-trigger w-full flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <span class="font-semibold">Policy Details</span>
+                        <svg class="w-5 h-5 transition-transform" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 15.6315L20.9679 10.8838L20.0321 9.11619L12 13.3685L3.96788 9.11619L3.0321 10.8838L12 15.6315Z"></path></svg>
+                    </button>
+                    <div class="accordion-content">
+                        <div class="p-4 space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Policy Number</label>
+                                    <input type="text" id="policy-number" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Renewal Date</label>
+                                    <input type="date" id="renewal-date" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Premium Amount</label>
+                                <input type="number" id="premium-amount" step="0.01" min="0" placeholder="0.00" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Communication Log Accordion -->
+                <div class="mb-4">
+                    <button type="button" class="accordion-trigger w-full flex justify-between items-center p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                        <span class="font-semibold">Communication History</span>
+                        <svg class="w-5 h-5 transition-transform" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 15.6315L20.9679 10.8838L20.0321 9.11619L12 13.3685L3.96788 9.11619L3.0321 10.8838L12 15.6315Z"></path></svg>
+                    </button>
+                    <div class="accordion-content">
+                        <div class="p-4">
+                            <div class="mb-4">
+                                <button type="button" id="addCommunicationBtn" class="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm">
+                                    Add Communication
+                                </button>
+                            </div>
+                            <div id="communicationLog" class="space-y-3 max-h-64 overflow-y-auto">
+                                <!-- Communication entries will be rendered here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" id="cancelProspect" class="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition duration-300">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- Task Modal -->
+    <div id="taskModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-lg bg-white dark:bg-gray-800 modal-enter">
+            <h2 id="taskModalTitle" class="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Add New Task</h2>
+            <form id="taskForm">
+                <input type="hidden" id="taskId">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Description *</label>
+                        <input type="text" id="taskDescription" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Due Date</label>
+                            <input type="date" id="taskDueDate" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Priority</label>
+                            <select id="taskPriority" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                                <option value="Low">Low</option>
+                                <option value="Medium" selected>Medium</option>
+                                <option value="High">High</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Status</label>
+                        <select id="taskStatus" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                            <option value="Pending">Pending</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Completed">Completed</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Assigned To</label>
+                        <input type="text" id="taskAssignedTo" placeholder="e.g., John Doe" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Link to Client/Prospect</label>
+                        <select id="taskLink" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                            <option value="">None</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone</label>
+                            <input type="tel" id="taskPhone" placeholder="e.g., (555) 123-4567" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+                            <input type="email" id="taskEmail" placeholder="e.g., john@example.com" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes</label>
+                        <textarea id="taskNotes" rows="3" placeholder="Additional notes..." class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"></textarea>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" id="cancelTask" class="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition duration-300">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300">Save Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Quick Note Modal -->
+    <div id="quickNoteModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-1/2 lg:w-1/3 shadow-lg rounded-lg bg-white dark:bg-gray-800 modal-enter">
+            <h3 class="text-xl font-bold mb-4">Quick Note</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">Notes are saved to the Communication History</p>
+            <form id="quickNoteForm">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Title</label>
+                        <input type="text" id="quickNoteTitle" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Note</label>
+                        <textarea id="quickNoteContent" rows="4" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Related To</label>
+                        <select id="quickNoteRelated" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                            <option value="">General Note</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" id="cancelQuickNote" class="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition duration-300">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition duration-300">Save Note</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Email Template Modal -->
+    <div id="templateModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-2/3 shadow-lg rounded-lg bg-white dark:bg-gray-800 modal-enter">
+            <h3 class="text-xl font-bold mb-4">Email Template</h3>
+            <form id="templateForm">
+                <input type="hidden" id="templateId">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Template Name</label>
+                        <input type="text" id="templateName" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Subject</label>
+                        <input type="text" id="templateSubject" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Content</label>
+                        <textarea id="templateContent" rows="10" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600" placeholder="Use {{name}}, {{email}}, {{phone}} for placeholders"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Category</label>
+                        <select id="templateCategory" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600">
+                            <option value="introduction">Introduction</option>
+                            <option value="follow-up">Follow-up</option>
+                            <option value="quote">Quote</option>
+                            <option value="renewal">Renewal</option>
+                            <option value="general">General</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" id="cancelTemplate" class="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition duration-300">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300">Save Template</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Keyboard Shortcuts Modal -->
+    <div id="keyboardShortcutsModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-1/2 lg:w-1/3 shadow-lg rounded-lg bg-white dark:bg-gray-800 modal-enter">
+            <h3 class="text-xl font-bold mb-4">Keyboard Shortcuts</h3>
+            <div class="space-y-3">
+                <div class="flex justify-between items-center">
+                    <span>Search</span>
+                    <kbd>/</kbd>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span>New Prospect</span>
+                    <div><kbd>Ctrl</kbd> + <kbd>P</kbd></div>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span>New Task</span>
+                    <div><kbd>Ctrl</kbd> + <kbd>T</kbd></div>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span>Quick Note</span>
+                    <div><kbd>Ctrl</kbd> + <kbd>N</kbd></div>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span>Toggle Theme</span>
+                    <div><kbd>Ctrl</kbd> + <kbd>D</kbd></div>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span>Navigate Tabs</span>
+                    <div><kbd>1</kbd> - <kbd>7</kbd></div>
+                </div>
+                <div class="flex justify-between items-center">
+                    <span>Close Modal</span>
+                    <kbd>Esc</kbd>
+                </div>
+            </div>
+            <div class="flex justify-end mt-6">
+                <button type="button" id="closeKeyboardShortcuts" class="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition duration-300">Close</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Communication Modal -->
+    <div id="communicationModal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-1/2 lg:w-1/3 shadow-lg rounded-lg bg-white dark:bg-gray-800 modal-enter">
+            <h3 class="text-xl font-bold mb-4">Add Communication</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">For: <span id="commPersonName" class="font-semibold"></span></p>
+            <form id="communicationForm">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Type</label>
+                        <select id="commType" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600" required>
+                            <option value="call">Phone Call</option>
+                            <option value="email">Email</option>
+                            <option value="meeting">Meeting</option>
+                            <option value="note">Note</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Date</label>
+                            <input type="date" id="commDate" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Time</label>
+                            <input type="time" id="commTime" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600" required>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Notes</label>
+                        <textarea id="commNotes" rows="3" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600" required></textarea>
+                    </div>
+                    <div class="flex items-center">
+                        <input type="checkbox" id="commFollowUp" class="mr-2">
+                        <label for="commFollowUp" class="text-sm text-gray-700 dark:text-gray-300">Follow-up required</label>
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" id="cancelCommunication" class="px-4 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition duration-300">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition duration-300">Save Communication</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- JavaScript Section -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- DATA STORAGE ---
+        let prospects = [];
+        let clients = [];
+        let tasks = [];
+        let quickNotes = [];
+        let emailTemplates = [];
+        let currentView = 'prospects';
+        let selectedTaskIds = new Set();
+        let currentEditingPerson = null;
+        let showWonLost = false; // Hide Won/Lost by default
+        
+        // Default email templates
+        const defaultTemplates = [
+            {
+                id: 'template-1',
+                name: 'Initial Contact',
+                subject: 'Insurance Quote Request - {{name}}',
+                content: 'Dear {{name}},\n\nThank you for your interest in our insurance services. I would be happy to provide you with a personalized quote.\n\nBest regards,\n[Your Name]',
+                category: 'introduction'
+            },
+            {
+                id: 'template-2',
+                name: 'Follow-up',
+                subject: 'Following up on your insurance quote',
+                content: 'Hi {{name}},\n\nI wanted to follow up on the quote I sent you last week. Do you have any questions?\n\nBest regards,\n[Your Name]',
+                category: 'follow-up'
+            }
+        ];
+
+        // --- DOM ELEMENTS ---
+        const prospectsContainer = document.getElementById('prospectsContainer');
+        const clientsContainer = document.getElementById('clientsContainer');
+        const tasksContainer = document.getElementById('tasksContainer');
+        const templatesContainer = document.getElementById('templatesContainer');
+        
+        const prospectModal = document.getElementById('prospectModal');
+        const prospectForm = document.getElementById('prospectForm');
+        const modalTitle = document.getElementById('modalTitle');
+        const prospectIdInput = document.getElementById('prospectId');
+
+        const taskModal = document.getElementById('taskModal');
+        const taskForm = document.getElementById('taskForm');
+        const taskModalTitle = document.getElementById('taskModalTitle');
+        const taskIdInput = document.getElementById('taskId');
+        const taskLinkSelect = document.getElementById('taskLink');
+        
+        const quickNoteModal = document.getElementById('quickNoteModal');
+        const quickNoteForm = document.getElementById('quickNoteForm');
+        
+        const templateModal = document.getElementById('templateModal');
+        const templateForm = document.getElementById('templateForm');
+        
+        const communicationModal = document.getElementById('communicationModal');
+        const communicationForm = document.getElementById('communicationForm');
+        
+        const searchInput = document.getElementById('searchInput');
+        const mobileSearchInput = document.getElementById('mobileSearchInput');
+
+        const tabs = {
+            prospects: document.getElementById('prospectsTab'),
+            clients: document.getElementById('clientsTab'),
+            tasks: document.getElementById('tasksTab'),
+            analytics: document.getElementById('analyticsTab'),
+            pipeline: document.getElementById('pipelineTab'),
+            comparison: document.getElementById('comparisonTab'),
+            templates: document.getElementById('templatesTab')
+        };
+        const panes = {
+            prospects: document.getElementById('prospectsView'),
+            clients: document.getElementById('clientsView'),
+            tasks: document.getElementById('tasksView'),
+            analytics: document.getElementById('analyticsView'),
+            pipeline: document.getElementById('pipelineView'),
+            comparison: document.getElementById('comparisonView'),
+            templates: document.getElementById('templatesView')
+        };
+        
+        // Chart instances
+        let prospectsClientsChart = null;
+        let taskStatusChart = null;
+        let monthlyActivityChart = null;
+
+        // --- DATA HANDLING ---
+        function loadData() {
+            prospects = JSON.parse(localStorage.getItem('prospects')) || [];
+            clients = JSON.parse(localStorage.getItem('clients')) || [];
+            tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+            quickNotes = JSON.parse(localStorage.getItem('quickNotes')) || [];
+            emailTemplates = JSON.parse(localStorage.getItem('emailTemplates')) || defaultTemplates;
+            
+            console.log('Loaded prospects:', prospects);
+            console.log('First prospect:', prospects[0]);
+            
+            // Ensure all prospects/clients have required fields
+            [...prospects, ...clients].forEach(person => {
+                if (!person.communications) person.communications = [];
+                if (!person.activities) person.activities = [];
+            });
+            
+            // Ensure all tasks have communications field
+            tasks.forEach(task => {
+                if (!task.communications) task.communications = [];
+            });
+            
+            updateQuickNotesCount();
+        }
+
+        function saveData() {
+            localStorage.setItem('prospects', JSON.stringify(prospects));
+            localStorage.setItem('clients', JSON.stringify(clients));
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+            localStorage.setItem('quickNotes', JSON.stringify(quickNotes));
+            localStorage.setItem('emailTemplates', JSON.stringify(emailTemplates));
+            renderAll();
+        }
+
+        function updateQuickNotesCount() {
+            const count = document.getElementById('quickNotesCount');
+            if (count) count.textContent = quickNotes.length;
+        }
+
+        // --- RENDER FUNCTIONS ---
+        function renderAll() {
+            const searchTerm = searchInput.value.toLowerCase();
+            renderProspects(searchTerm);
+            renderClients(searchTerm);
+            renderTasks(searchTerm);
+            renderEmailTemplates();
+            updateQuickNotesCount();
+            if (currentView === 'analytics') renderAnalytics();
+            if (currentView === 'pipeline') renderPipeline();
+            if (currentView === 'comparison') renderQuoteComparison();
+        }
+        
+        const getStatusClass = (status) => {
+            const statusMap = {
+                'new': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+                'contacted': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+                'follow-up': 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
+                'interested': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+                'not interested': 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
+                'converted': 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-300',
+                'needs analysis': 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300',
+                'proposal sent': 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-300',
+                'negotiation': 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300',
+                'won': 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300',
+                'lost': 'bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-300',
+                'active': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+                'inactive': 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
+            };
+            return statusMap[status.toLowerCase()] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+        };
+
+        function createPersonCard(person, type) {
+            const card = document.createElement('div');
+            card.className = 'bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 p-5 flex flex-col';
+            card.setAttribute('data-id', person.id);
+
+            const tags = Array.isArray(person.tags) ? person.tags : [];
+            const tagsHTML = tags.map(tag => `<span class="bg-gray-200 dark:bg-gray-700 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded-full">${tag}</span>`).join('');
+            
+            let detailsHTML = `
+                <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                    <div class="font-semibold text-gray-500 dark:text-gray-400">Quote Status</div><div>${person['quote-status'] || 'N/A'}</div>
+                    <div class="font-semibold text-gray-500 dark:text-gray-400">Quoted Premium</div><div>${person['quoted-premium'] ? '$' + person['quoted-premium'] : 'N/A'}</div>
+                    <div class="font-semibold text-gray-500 dark:text-gray-400">Policy Type</div><div>${person['policy-type'] || 'N/A'}</div>
+                    ${person['onedrive-link'] ? `
+                    <div class="font-semibold text-gray-500 dark:text-gray-400">OneDrive</div>
+                    <div><a href="${person['onedrive-link']}" target="_blank" class="text-blue-500 hover:text-blue-700"><i class="fas fa-folder"></i> View Folder</a></div>
+                    ` : ''}
+                </div>
+            `;
+
+            if (type === 'client') {
+                detailsHTML += `
+                <div class="border-t dark:border-gray-600 my-2"></div>
+                <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                    <div class="font-semibold text-gray-500 dark:text-gray-400">Policy #</div><div>${person['policy-number'] || 'N/A'}</div>
+                    <div class="font-semibold text-gray-500 dark:text-gray-400">Renewal</div><div>${person['renewal-date'] || 'N/A'}</div>
+                    <div class="font-semibold text-gray-500 dark:text-gray-400">Premium</div><div>${person['premium-amount'] ? '$' + person['premium-amount'] : 'N/A'}</div>
+                </div>
+                `;
+            }
+
+            card.innerHTML = `
+                <div class="flex-grow cursor-pointer card-header">
+                    <div class="flex justify-between items-start">
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">${person.name || 'Unnamed'}</h3>
+                        <div class="status-tag ${getStatusClass(person.status)}">${person.status}</div>
+                    </div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">${person.email || ''}</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">${person.phone || ''}</p>
+                    <div class="mt-4 text-sm text-gray-600 dark:text-gray-300">
+                        <p class="whitespace-pre-wrap">${person.notes || ''}</p>
+                    </div>
+                    <div class="mt-4">${tagsHTML}</div>
+                </div>
+                
+                <div class="card-details border-t dark:border-gray-700">
+                   ${detailsHTML}
+                   
+                   <!-- Communication History Section -->
+                   <div class="mt-4">
+                       <div class="flex justify-between items-center mb-2">
+                           <h6 class="font-semibold text-gray-600 dark:text-gray-400">Communications</h6>
+                           <div class="flex gap-2">
+                               <button class="add-comm-btn text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600" title="Add Communication">
+                                   <i class="fas fa-plus"></i> Add
+                               </button>
+                               <button class="view-comm-btn text-xs bg-gray-500 text-white px-2 py-1 rounded hover:bg-gray-600" title="View History">
+                                   <i class="fas fa-history"></i> History
+                               </button>
+                               <button class="print-comm-btn text-xs bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600" title="Print History">
+                                   <i class="fas fa-print"></i>
+                               </button>
+                               <button class="download-comm-btn text-xs bg-purple-500 text-white px-2 py-1 rounded hover:bg-purple-600" title="Download History">
+                                   <i class="fas fa-download"></i>
+                               </button>
+                           </div>
+                       </div>
+                       <div class="communication-summary text-sm space-y-1">
+                           ${(person.communications || []).slice(-3).map(comm => `
+                               <div class="flex items-center text-xs text-gray-500 dark:text-gray-400 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
+                                   <span class="mr-2">${getCommIcon(comm.type)}</span>
+                                   <span class="flex-1">${comm.notes || comm.summary || 'No notes'}</span>
+                                   <span>${comm.date ? new Date(comm.date).toLocaleDateString() : 'No date'}</span>
+                               </div>
+                           `).join('')}
+                           ${(!person.communications || person.communications.length === 0) ? 
+                               '<p class="text-xs text-gray-400 italic">No communications yet</p>' : ''}
+                       </div>
+                   </div>
+                   
+                   <!-- Quick Actions -->
+                   <div class="mt-3 flex flex-wrap gap-2">
+                       <button class="quick-note-btn text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded hover:bg-yellow-200 transition" title="Quick Note">
+                           <i class="fas fa-sticky-note"></i> Note
+                       </button>
+                       <button class="quick-email-btn text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition" title="Send Email">
+                           <i class="fas fa-envelope"></i> Email
+                       </button>
+                       <button class="quick-call-btn text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200 transition" title="Log Call">
+                           <i class="fas fa-phone"></i> Call
+                       </button>
+                       <button class="quick-meeting-btn text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded hover:bg-purple-200 transition" title="Schedule Meeting">
+                           <i class="fas fa-users"></i> Meeting
+                       </button>
+                       <button class="quick-task-btn text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded hover:bg-orange-200 transition" title="Create Task">
+                           <i class="fas fa-tasks"></i> Task
+                       </button>
+                   </div>
+                </div>
+
+                <div class="border-t dark:border-gray-700 mt-4 pt-4 flex justify-between items-center">
+                    <span class="text-xs text-gray-400">ID: ${String(person.id).substring(0,8)}</span>
+                    <div class="flex space-x-2">
+                         ${type === 'prospect' ? `<button class="convert-btn text-green-500 hover:text-green-700" title="Convert to Client"><svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M13.0001 16.1716L18.3641 10.8076L19.7783 12.2218L13.0001 19L6.22187 12.2218L7.63609 10.8076L13.0001 16.1716Z"></path><path d="M13 3V16H11V3H13Z"></path></svg></button>` : ''}
+                        <button class="edit-btn text-blue-500 hover:text-blue-700" title="Edit"><svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M15.7279 9.57629L14.3137 8.16207L5 17.4758V19H6.52423L15.7279 9.57629ZM17.1421 8.16207L18.5563 6.74785L17.1421 5.33363L15.7279 6.74785L17.1421 8.16207ZM7.23223 21H3V16.7678L14.3137 5.45408C14.8995 4.86829 15.849 4.86829 16.4348 5.45408L18.5563 7.5756C19.1421 8.16139 19.1421 9.11086 18.5563 9.69665L7.23223 21Z"></path></svg></button>
+                        <button class="delete-btn text-red-500 hover:text-red-700" title="Delete"><svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M17 6H22V8H20V21C20 21.5523 19.5523 22 19 22H5C4.44772 22 4 21.5523 4 21V8H2V6H7V3C7 2.44772 7.44772 2 8 2H16C16.5523 2 17 2.44772 17 3V6ZM18 8H6V20H18V8ZM9 11H11V17H9V11ZM13 11H15V17H13V11ZM9 4V6H15V4H9Z"></path></svg></button>
+                    </div>
+                </div>
+            `;
+            
+            card.querySelector('.card-header').addEventListener('click', () => {
+                card.querySelector('.card-details').classList.toggle('expanded');
+            });
+            card.querySelector('.edit-btn').addEventListener('click', () => openProspectModal(person, type));
+            card.querySelector('.delete-btn').addEventListener('click', () => deletePerson(person.id, type));
+            if (type === 'prospect') {
+                 card.querySelector('.convert-btn').addEventListener('click', () => convertToClient(person.id));
+            }
+            
+            // Communication action listeners
+            card.querySelector('.add-comm-btn')?.addEventListener('click', (e) => {
+                e.stopPropagation();
+                openCommunicationModal(person, type);
+            });
+            
+            card.querySelector('.view-comm-btn')?.addEventListener('click', (e) => {
+                e.stopPropagation();
+                viewCommunicationHistory(person, type);
+            });
+            
+            card.querySelector('.print-comm-btn')?.addEventListener('click', (e) => {
+                e.stopPropagation();
+                printCommunicationHistory(person);
+            });
+            
+            card.querySelector('.download-comm-btn')?.addEventListener('click', (e) => {
+                e.stopPropagation();
+                downloadCommunicationHistory(person);
+            });
+            
+            // Quick action listeners
+            card.querySelector('.quick-note-btn')?.addEventListener('click', (e) => {
+                e.stopPropagation();
+                openQuickNoteModal(person, type);
+            });
+            
+            card.querySelector('.quick-email-btn')?.addEventListener('click', (e) => {
+                e.stopPropagation();
+                openEmailTemplateSelector(person);
+            });
+            
+            card.querySelector('.quick-call-btn')?.addEventListener('click', (e) => {
+                e.stopPropagation();
+                logQuickCall(person, type);
+            });
+            
+            card.querySelector('.quick-meeting-btn')?.addEventListener('click', (e) => {
+                e.stopPropagation();
+                scheduleMeeting(person, type);
+            });
+            
+            card.querySelector('.quick-task-btn')?.addEventListener('click', (e) => {
+                e.stopPropagation();
+                createQuickTask(person, type);
+            });
+            
+            return card;
+        }
+
+        function renderProspects(filter = '') {
+            prospectsContainer.innerHTML = '';
+            let filtered = prospects.filter(p => 
+                (p.name || '').toLowerCase().includes(filter) ||
+                (p.notes || '').toLowerCase().includes(filter) ||
+                (Array.isArray(p.tags) ? p.tags : []).some(t => t.toLowerCase().includes(filter))
+            );
+            
+            // Filter out Won/Lost if showWonLost is false
+            if (!showWonLost) {
+                filtered = filtered.filter(p => 
+                    p.status && p.status.toLowerCase() !== 'won' && p.status.toLowerCase() !== 'lost'
+                );
+            }
+            if (filtered.length === 0) {
+                 prospectsContainer.innerHTML = '<p class="text-gray-500 col-span-full text-center">No prospects found. Add one to get started!</p>';
+            } else {
+                filtered.forEach(p => prospectsContainer.appendChild(createPersonCard(p, 'prospect')));
+            }
+        }
+        
+        function renderClients(filter = '') {
+            clientsContainer.innerHTML = '';
+            let filtered = clients.filter(c => 
+                (c.name || '').toLowerCase().includes(filter) ||
+                (c.notes || '').toLowerCase().includes(filter) ||
+                (Array.isArray(c.tags) ? c.tags : []).some(t => t.toLowerCase().includes(filter))
+            );
+            
+            // Filter out Won/Lost if showWonLost is false
+            if (!showWonLost) {
+                filtered = filtered.filter(c => 
+                    c.status && c.status.toLowerCase() !== 'won' && c.status.toLowerCase() !== 'lost'
+                );
+            }
+             if (filtered.length === 0) {
+                 clientsContainer.innerHTML = '<p class="text-gray-500 col-span-full text-center">No clients found.</p>';
+            } else {
+                filtered.forEach(c => clientsContainer.appendChild(createPersonCard(c, 'client')));
+            }
+        }
+
+        const getPriorityClass = (priority) => {
+            switch(priority) {
+                case 'High': return 'bg-red-500';
+                case 'Medium': return 'bg-yellow-500';
+                case 'Low': return 'bg-green-500';
+                default: return 'bg-gray-300';
+            }
+        };
+        
+        function createTaskCard(task) {
+            const card = document.createElement('div');
+            
+            // Check if task is overdue
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const dueDate = task.dueDate ? new Date(task.dueDate) : null;
+            const isOverdue = dueDate && dueDate < today && task.status !== 'Completed';
+            
+            // Add red border for overdue tasks
+            const overdueBorder = isOverdue ? 'border-2 border-red-500' : '';
+            card.className = `bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 p-5 flex flex-col ${overdueBorder}`;
+            card.setAttribute('data-id', task.id);
+            
+            const linkedPerson = prospects.find(p => p.id === task.linkedId) || clients.find(c => c.id === task.linkedId);
+            
+            const statusClass = task.status === 'Completed' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' :
+                              task.status === 'In Progress' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' :
+                              'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+            
+            let detailsHTML = `
+                <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                    <div class="font-semibold text-gray-500 dark:text-gray-400">Due Date</div>
+                    <div>${task.dueDate || 'No due date'}</div>
+                    <div class="font-semibold text-gray-500 dark:text-gray-400">Assigned To</div>
+                    <div>${task.assignedTo || 'Unassigned'}</div>
+                    ${linkedPerson ? `
+                    <div class="font-semibold text-gray-500 dark:text-gray-400">Linked To</div>
+                    <div>${linkedPerson.name}</div>
+                    ` : ''}
+                    ${task.phone ? `
+                    <div class="font-semibold text-gray-500 dark:text-gray-400">Phone</div>
+                    <div><a href="tel:${task.phone}" class="text-blue-500 hover:text-blue-700">${task.phone}</a></div>
+                    ` : ''}
+                    ${task.email ? `
+                    <div class="font-semibold text-gray-500 dark:text-gray-400">Email</div>
+                    <div><a href="mailto:${task.email}" class="text-blue-500 hover:text-blue-700">${task.email}</a></div>
+                    ` : ''}
+                </div>
+            `;
+            
+            // Format due date for display
+            const formatDueDate = (date) => {
+                if (!date) return 'No due date';
+                const d = new Date(date);
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const tomorrow = new Date(today);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                
+                if (d.toDateString() === today.toDateString()) return 'Today';
+                if (d.toDateString() === tomorrow.toDateString()) return 'Tomorrow';
+                if (d < today) return `Overdue (${d.toLocaleDateString()})`;
+                return d.toLocaleDateString();
+            };
+            
+            const dueDateDisplay = formatDueDate(task.dueDate);
+            const dueDateClass = isOverdue ? 'text-red-600 font-bold' : 
+                                task.dueDate && dueDateDisplay === 'Today' ? 'text-orange-600 font-semibold' :
+                                task.dueDate && dueDateDisplay === 'Tomorrow' ? 'text-yellow-600 font-semibold' : 
+                                'text-gray-600';
+            
+            card.innerHTML = `
+                <div class="flex-grow cursor-pointer card-header">
+                    <div class="flex justify-between items-start">
+                        <div class="flex items-center space-x-2">
+                            <input type="checkbox" class="task-select rounded" data-task-id="${task.id}" onclick="event.stopPropagation()">
+                            <h3 class="text-lg font-bold text-gray-900 dark:text-white">${task.description}</h3>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="inline-block w-3 h-3 rounded-full ${getPriorityClass(task.priority)}" title="${task.priority} Priority"></span>
+                            <div class="status-tag ${statusClass}">${task.status}</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between mt-2">
+                        <div class="${dueDateClass} text-sm flex items-center">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            ${dueDateDisplay}
+                        </div>
+                        ${task.assignedTo ? `<div class="text-sm text-gray-500 dark:text-gray-400">Assigned to: ${task.assignedTo}</div>` : ''}
+                    </div>
+                    ${task.notes ? `
+                    <div class="mt-4 text-sm text-gray-600 dark:text-gray-300">
+                        <p class="whitespace-pre-wrap">${task.notes}</p>
+                    </div>
+                    ` : ''}
+                </div>
+                
+                <div class="card-details border-t dark:border-gray-700">
+                   ${detailsHTML}
+                   
+                   <!-- Communication History Section -->
+                   <div class="mt-4">
+                       <div class="flex justify-between items-center mb-2">
+                           <h6 class="font-semibold text-gray-600 dark:text-gray-400">Communications</h6>
+                           <div class="flex gap-2">
+                               <button class="add-comm-btn text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600" title="Add Communication">
+                                   <i class="fas fa-plus"></i> Add
+                               </button>
+                               <button class="view-comm-btn text-xs bg-gray-500 text-white px-2 py-1 rounded hover:bg-gray-600" title="View History">
+                                   <i class="fas fa-history"></i> History
+                               </button>
+                               <button class="print-comm-btn text-xs bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600" title="Print History">
+                                   <i class="fas fa-print"></i>
+                               </button>
+                               <button class="download-comm-btn text-xs bg-purple-500 text-white px-2 py-1 rounded hover:bg-purple-600" title="Download History">
+                                   <i class="fas fa-download"></i>
+                               </button>
+                           </div>
+                       </div>
+                       <div class="communication-summary text-sm space-y-1">
+                           ${(task.communications || []).slice(-3).map(comm => `
+                               <div class="flex items-center text-xs text-gray-500 dark:text-gray-400 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700">
+                                   <span class="mr-2">${getCommIcon(comm.type)}</span>
+                                   <span class="flex-1">${comm.notes || comm.summary || 'No notes'}</span>
+                                   <span>${comm.date ? new Date(comm.date).toLocaleDateString() : 'No date'}</span>
+                               </div>
+                           `).join('')}
+                           ${(!task.communications || task.communications.length === 0) ? 
+                               '<p class="text-xs text-gray-400 italic">No communications yet</p>' : ''}
+                       </div>
+                   </div>
+                   
+                   <!-- Quick Actions -->
+                   <div class="mt-3 flex flex-wrap gap-2">
+                       <button class="quick-note-btn text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded hover:bg-yellow-200 transition" title="Quick Note">
+                           <i class="fas fa-sticky-note"></i> Note
+                       </button>
+                       <button class="quick-email-btn text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded hover:bg-blue-200 transition" title="Send Email">
+                           <i class="fas fa-envelope"></i> Email
+                       </button>
+                       <button class="quick-call-btn text-xs bg-green-100 text-green-700 px-2 py-1 rounded hover:bg-green-200 transition" title="Log Call">
+                           <i class="fas fa-phone"></i> Call
+                       </button>
+                   </div>
+                </div>
+
+                <div class="border-t dark:border-gray-700 mt-4 pt-4 flex justify-between items-center">
+                    <span class="text-xs text-gray-400">ID: ${String(task.id).substring(0,8)}</span>
+                    <div class="flex space-x-2">
+                        <button class="edit-btn text-blue-500 hover:text-blue-700" title="Edit" onclick="editTask('${task.id}')">
+                            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M15.7279 9.57629L14.3137 8.16207L5 17.4758V19H6.52423L15.7279 9.57629ZM17.1421 8.16207L18.5563 6.74785L17.1421 5.33363L15.7279 6.74785L17.1421 8.16207ZM7.23223 21H3V16.7678L14.3137 5.45408C14.8995 4.86829 15.849 4.86829 16.4348 5.45408L18.5563 7.5756C19.1421 8.16139 19.1421 9.11086 18.5563 9.69665L7.23223 21Z"></path>
+                            </svg>
+                        </button>
+                        <button class="delete-btn text-red-500 hover:text-red-700" title="Delete" onclick="deleteTask('${task.id}')">
+                            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M17 6H22V8H20V21C20 21.5523 19.5523 22 19 22H5C4.44772 22 4 21.5523 4 21V8H2V6H7V3C7 2.44772 7.44772 2 8 2H16C16.5523 2 17 2.44772 17 3V6ZM18 8H6V20H18V8ZM9 11H11V17H9V11ZM13 11H15V17H13V11ZM9 4V6H15V4H9Z"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // Event listeners
+            card.querySelector('.card-header').addEventListener('click', () => {
+                card.querySelector('.card-details').classList.toggle('expanded');
+            });
+            
+            // Task selection checkbox
+            card.querySelector('.task-select').addEventListener('change', (e) => {
+                if (e.target.checked) {
+                    selectedTaskIds.add(task.id);
+                } else {
+                    selectedTaskIds.delete(task.id);
+                }
+                updateBulkActionsBar();
+            });
+            
+            // Communication action listeners
+            card.querySelector('.add-comm-btn')?.addEventListener('click', (e) => {
+                e.stopPropagation();
+                openTaskCommunicationModal(task);
+            });
+            
+            card.querySelector('.view-comm-btn')?.addEventListener('click', (e) => {
+                e.stopPropagation();
+                viewCommunicationHistory(task, 'task');
+            });
+            
+            card.querySelector('.print-comm-btn')?.addEventListener('click', (e) => {
+                e.stopPropagation();
+                printCommunicationHistory(task);
+            });
+            
+            card.querySelector('.download-comm-btn')?.addEventListener('click', (e) => {
+                e.stopPropagation();
+                downloadCommunicationHistory(task);
+            });
+            
+            // Quick action listeners
+            card.querySelector('.quick-note-btn')?.addEventListener('click', (e) => {
+                e.stopPropagation();
+                openQuickNoteModal(task, 'task');
+            });
+            
+            card.querySelector('.quick-email-btn')?.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const linkedEmail = task.email || (linkedPerson && linkedPerson.email);
+                if (linkedEmail) {
+                    window.location.href = `mailto:${linkedEmail}`;
+                } else {
+                    alert('No email address available for this task');
+                }
+            });
+            
+            card.querySelector('.quick-call-btn')?.addEventListener('click', (e) => {
+                e.stopPropagation();
+                logQuickCallForTask(task);
+            });
+            
+            return card;
+        }
+
+        function renderTasks(filter = '') {
+            tasksContainer.innerHTML = '';
+            const priorityFilter = document.getElementById('taskFilterPriority').value;
+            const statusFilter = document.getElementById('taskFilterStatus').value;
+            
+            let filtered = tasks.filter(t => 
+                (t.description || '').toLowerCase().includes(filter) ||
+                (t.notes || '').toLowerCase().includes(filter) ||
+                (t.assignedTo || '').toLowerCase().includes(filter)
+            );
+            
+            if (priorityFilter) {
+                filtered = filtered.filter(t => t.priority === priorityFilter);
+            }
+            if (statusFilter) {
+                filtered = filtered.filter(t => t.status === statusFilter);
+            }
+            
+            if (filtered.length === 0) {
+                 tasksContainer.innerHTML = '<p class="text-gray-500 col-span-full text-center">No tasks found.</p>';
+                 return;
+            }
+
+            // Sort tasks by due date - tasks without due dates go to the end
+            filtered.sort((a, b) => {
+                if (!a.dueDate && !b.dueDate) return 0;
+                if (!a.dueDate) return 1;
+                if (!b.dueDate) return -1;
+                return new Date(a.dueDate) - new Date(b.dueDate);
+            }).forEach(task => {
+                tasksContainer.appendChild(createTaskCard(task));
+            });
+            
+            updateBulkActionsBar();
+        }
+
+        function updateBulkActionsBar() {
+            const bulkActionsBar = document.getElementById('bulkActionsBar');
+            const selectedCount = document.getElementById('selectedCount');
+            
+            if (selectedTaskIds.size > 0) {
+                bulkActionsBar.classList.remove('hidden');
+                selectedCount.textContent = selectedTaskIds.size;
+            } else {
+                bulkActionsBar.classList.add('hidden');
+            }
+        }
+        
+        function renderEmailTemplates() {
+            templatesContainer.innerHTML = '';
+            
+            if (emailTemplates.length === 0) {
+                templatesContainer.innerHTML = '<p class="text-gray-500 col-span-full text-center">No email templates found. Create one to get started!</p>';
+                return;
+            }
+            
+            emailTemplates.forEach(template => {
+                const card = document.createElement('div');
+                card.className = 'bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow';
+                
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <h4 class="font-semibold text-gray-900 dark:text-white">${template.name}</h4>
+                        <span class="text-xs bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 px-2 py-1 rounded">${template.category}</span>
+                    </div>
+                    <p class="text-sm text-gray-600 dark:text-gray-400 mb-2">${template.subject}</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 line-clamp-3">${template.content}</p>
+                    <div class="flex justify-end mt-3 space-x-2">
+                        <button onclick="editTemplate('${template.id}')" class="text-blue-500 hover:text-blue-700 text-sm">Edit</button>
+                        <button onclick="deleteTemplate('${template.id}')" class="text-red-500 hover:text-red-700 text-sm">Delete</button>
+                    </div>
+                `;
+                
+                templatesContainer.appendChild(card);
+            });
+        }
+
+        function renderPipeline() {
+            const pipelineContainer = document.getElementById('pipelineContainer');
+            pipelineContainer.innerHTML = '';
+            
+            const stages = ['New', 'Contacted', 'Interested', 'Negotiation', 'Won', 'Lost'];
+            
+            stages.forEach(stage => {
+                const stageDiv = document.createElement('div');
+                stageDiv.className = 'flex-1 min-w-[250px] bg-gray-100 dark:bg-gray-700 rounded-lg p-4';
+                
+                const stageProspects = prospects.filter(p => p.status === stage);
+                const stageClients = clients.filter(c => c.status === stage);
+                const stageItems = [...stageProspects, ...stageClients];
+                
+                stageDiv.innerHTML = `
+                    <h3 class="font-semibold text-gray-700 dark:text-gray-300 mb-3">${stage} (${stageItems.length})</h3>
+                    <div class="space-y-2">
+                        ${stageItems.map(item => `
+                            <div class="bg-white dark:bg-gray-800 p-3 rounded shadow cursor-pointer hover:shadow-md transition-shadow">
+                                <h4 class="font-medium text-sm">${item.name}</h4>
+                                <p class="text-xs text-gray-500">${item['policy-type'] || 'N/A'}</p>
+                                ${item['quoted-premium'] ? `<p class="text-xs text-green-600">$${item['quoted-premium']}</p>` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                
+                pipelineContainer.appendChild(stageDiv);
+            });
+        }
+
+        function renderQuoteComparison() {
+            const comparisonContainer = document.getElementById('comparison-prospects');
+            comparisonContainer.innerHTML = '';
+            
+            const quotedItems = [...prospects, ...clients].filter(item => item['quoted-premium']);
+            
+            quotedItems.forEach(item => {
+                const card = document.createElement('div');
+                card.className = 'bg-white dark:bg-gray-800 rounded-lg shadow p-4';
+                
+                card.innerHTML = `
+                    <label class="flex items-center space-x-3">
+                        <input type="checkbox" class="comparison-select rounded" data-item-id="${item.id}">
+                        <div class="flex-1">
+                            <h4 class="font-semibold">${item.name}</h4>
+                            <p class="text-sm text-gray-500">${item['policy-type'] || 'N/A'} - $${item['quoted-premium']}</p>
+                        </div>
+                    </label>
+                `;
+                
+                comparisonContainer.appendChild(card);
+            });
+            
+            // Handle comparison selection
+            document.querySelectorAll('.comparison-select').forEach(checkbox => {
+                checkbox.addEventListener('change', updateComparisonButton);
+            });
+        }
+
+        function updateComparisonButton() {
+            const selected = document.querySelectorAll('.comparison-select:checked');
+            const compareBtn = document.getElementById('compare-selected');
+            compareBtn.disabled = selected.length < 2;
+        }
+
+        function displayComparisonResults() {
+            const selected = Array.from(document.querySelectorAll('.comparison-select:checked')).map(cb => cb.dataset.itemId);
+            const items = [...prospects, ...clients].filter(item => selected.includes(item.id));
+            
+            const resultsContainer = document.getElementById('comparison-results');
+            resultsContainer.innerHTML = `
+                <table class="w-full">
+                    <thead>
+                        <tr class="bg-gray-100 dark:bg-gray-700">
+                            <th class="p-3 text-left">Name</th>
+                            <th class="p-3 text-left">Policy Type</th>
+                            <th class="p-3 text-left">Premium</th>
+                            <th class="p-3 text-left">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${items.map(item => `
+                            <tr class="border-b dark:border-gray-700">
+                                <td class="p-3">${item.name}</td>
+                                <td class="p-3">${item['policy-type'] || 'N/A'}</td>
+                                <td class="p-3">$${item['quoted-premium'] || '0'}</td>
+                                <td class="p-3"><span class="status-tag ${getStatusClass(item.status)}">${item.status}</span></td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+        }
+
+        function renderAnalytics() {
+            // Prospects vs Clients Chart
+            const prospectsCtx = document.getElementById('prospectsClientsChart').getContext('2d');
+            if (prospectsClientsChart) prospectsClientsChart.destroy();
+            
+            prospectsClientsChart = new Chart(prospectsCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Prospects', 'Clients'],
+                    datasets: [{
+                        data: [prospects.length, clients.length],
+                        backgroundColor: ['#3B82F6', '#10B981']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+            
+            // Task Status Chart
+            const taskCtx = document.getElementById('taskStatusChart').getContext('2d');
+            if (taskStatusChart) taskStatusChart.destroy();
+            
+            const taskStatusData = {
+                pending: tasks.filter(t => t.status === 'Pending').length,
+                inProgress: tasks.filter(t => t.status === 'In Progress').length,
+                completed: tasks.filter(t => t.status === 'Completed').length
+            };
+            
+            taskStatusChart = new Chart(taskCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Pending', 'In Progress', 'Completed'],
+                    datasets: [{
+                        label: 'Tasks',
+                        data: [taskStatusData.pending, taskStatusData.inProgress, taskStatusData.completed],
+                        backgroundColor: ['#EF4444', '#F59E0B', '#10B981']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+            
+            // Monthly Activity Chart
+            const monthlyCtx = document.getElementById('monthlyActivityChart').getContext('2d');
+            if (monthlyActivityChart) monthlyActivityChart.destroy();
+            
+            // Generate mock monthly data
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+            const monthlyData = months.map(() => Math.floor(Math.random() * 20) + 5);
+            
+            monthlyActivityChart = new Chart(monthlyCtx, {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [{
+                        label: 'Activities',
+                        data: monthlyData,
+                        borderColor: '#3B82F6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        // --- MODAL FUNCTIONS ---
+        function openProspectModal(person = null, type = 'prospect') {
+            currentEditingPerson = person;
+            const isEdit = !!person;
+            
+            // Store the type for form submission
+            window.currentModalType = type;
+            
+            // Update modal title based on whether we're adding/editing and the type
+            if (isEdit) {
+                modalTitle.textContent = `Edit ${type === 'client' ? 'Client' : 'Prospect'}`;
+            } else {
+                modalTitle.textContent = type === 'client' ? 'Add New Client' : 'Add New Prospect';
+            }
+            
+            if (isEdit) {
+                prospectIdInput.value = person.id;
+                document.getElementById('name').value = person.name || '';
+                document.getElementById('email').value = person.email || '';
+                document.getElementById('phone').value = person.phone || '';
+                document.getElementById('status').value = person.status || 'New';
+                document.getElementById('tags').value = (person.tags || []).join(', ');
+                document.getElementById('notes').value = person.notes || '';
+                document.getElementById('quote-status').value = person['quote-status'] || '';
+                document.getElementById('quoted-premium').value = person['quoted-premium'] || '';
+                document.getElementById('policy-type').value = person['policy-type'] || '';
+                document.getElementById('onedrive-link').value = person['onedrive-link'] || '';
+                
+                if (type === 'client') {
+                    document.getElementById('policy-number').value = person['policy-number'] || '';
+                    document.getElementById('renewal-date').value = person['renewal-date'] || '';
+                    document.getElementById('premium-amount').value = person['premium-amount'] || '';
+                    document.querySelectorAll('.client-only').forEach(el => el.classList.remove('hidden'));
+                } else {
+                    document.querySelectorAll('.client-only').forEach(el => el.classList.add('hidden'));
+                }
+                
+                // Render communication log
+                renderCommunicationLog(person);
+            } else {
+                prospectForm.reset();
+                prospectIdInput.value = '';
+                
+                // Show/hide client fields based on type
+                if (type === 'client') {
+                    document.getElementById('status').value = 'Active';
+                    document.querySelectorAll('.client-only').forEach(el => el.classList.remove('hidden'));
+                } else {
+                    document.getElementById('status').value = 'New';
+                    document.querySelectorAll('.client-only').forEach(el => el.classList.add('hidden'));
+                }
+                
+                document.getElementById('communicationLog').innerHTML = '<p class="text-sm text-gray-500">No communications yet</p>';
+            }
+            
+            prospectModal.classList.remove('hidden');
+        }
+
+        function closeProspectModal() {
+            prospectModal.classList.add('hidden');
+            currentEditingPerson = null;
+        }
+
+        function openTaskModal(task = null) {
+            const isEdit = !!task;
+            taskModalTitle.textContent = isEdit ? 'Edit Task' : 'Add New Task';
+            
+            // Populate linked persons dropdown
+            taskLinkSelect.innerHTML = '<option value="">None</option>';
+            [...prospects, ...clients].forEach(person => {
+                const option = document.createElement('option');
+                option.value = person.id;
+                option.textContent = person.name;
+                taskLinkSelect.appendChild(option);
+            });
+            
+            if (isEdit) {
+                taskIdInput.value = task.id;
+                document.getElementById('taskDescription').value = task.description || '';
+                document.getElementById('taskDueDate').value = task.dueDate || '';
+                document.getElementById('taskPriority').value = task.priority || 'Medium';
+                document.getElementById('taskStatus').value = task.status || 'Pending';
+                document.getElementById('taskAssignedTo').value = task.assignedTo || '';
+                document.getElementById('taskPhone').value = task.phone || '';
+                document.getElementById('taskEmail').value = task.email || '';
+                document.getElementById('taskNotes').value = task.notes || '';
+                taskLinkSelect.value = task.linkedId || '';
+            } else {
+                taskForm.reset();
+                taskIdInput.value = '';
+            }
+            
+            taskModal.classList.remove('hidden');
+        }
+
+        function closeTaskModal() {
+            taskModal.classList.add('hidden');
+        }
+
+        // Communication Log Functions
+        function renderCommunicationLog(person) {
+            const logContainer = document.getElementById('communicationLog');
+            if (!person.communications || person.communications.length === 0) {
+                logContainer.innerHTML = '<p class="text-sm text-gray-500">No communications yet</p>';
+                return;
+            }
+            
+            logContainer.innerHTML = person.communications.map(comm => `
+                <div class="timeline-item mb-3">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                ${getCommIcon(comm.type)}
+                                <span class="font-medium text-sm">${comm.summary}</span>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">${new Date(comm.date).toLocaleString()}</p>
+                            ${comm.details ? `<p class="text-sm text-gray-600 dark:text-gray-400 mt-2">${comm.details}</p>` : ''}
+                        </div>
+                        <button onclick="deleteCommunication('${comm.id}')" class="text-red-500 hover:text-red-700">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function getCommIcon(type) {
+            const icons = {
+                call: '<i class="fas fa-phone text-green-500"></i>',
+                email: '<i class="fas fa-envelope text-blue-500"></i>',
+                meeting: '<i class="fas fa-users text-purple-500"></i>',
+                note: '<i class="fas fa-sticky-note text-yellow-500"></i>'
+            };
+            return icons[type] || '<i class="fas fa-comment text-gray-500"></i>';
+        }
+
+        // Global functions for onclick handlers
+        window.editTask = function(taskId) {
+            const task = tasks.find(t => t.id === taskId);
+            if (task) openTaskModal(task);
+        };
+        
+        window.deleteTask = function(taskId) {
+            if (confirm('Are you sure you want to delete this task?')) {
+                tasks = tasks.filter(t => t.id !== taskId);
+                saveData();
+            }
+        };
+        
+        window.editTemplate = function(templateId) {
+            const template = emailTemplates.find(t => t.id === templateId);
+            if (template) openTemplateModal(template);
+        };
+        
+        window.deleteTemplate = function(templateId) {
+            if (confirm('Are you sure you want to delete this template?')) {
+                emailTemplates = emailTemplates.filter(t => t.id !== templateId);
+                saveData();
+            }
+        };
+        
+        window.deleteCommunication = function(commId) {
+            if (currentEditingPerson && confirm('Are you sure you want to delete this communication?')) {
+                currentEditingPerson.communications = currentEditingPerson.communications.filter(c => c.id !== commId);
+                renderCommunicationLog(currentEditingPerson);
+            }
+        };
+
+        // --- FORM SUBMISSIONS ---
+        prospectForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const nameElement = document.getElementById('name');
+            console.log('Name element:', nameElement);
+            console.log('Name value:', nameElement?.value);
+            
+            const formData = {
+                id: prospectIdInput.value || Date.now().toString(),
+                name: document.getElementById('name')?.value || '',
+                email: document.getElementById('email')?.value || '',
+                phone: document.getElementById('phone')?.value || '',
+                status: document.getElementById('status')?.value || 'New',
+                tags: (document.getElementById('tags')?.value || '').split(',').map(t => t.trim()).filter(t => t),
+                notes: document.getElementById('notes')?.value || '',
+                'quote-status': document.getElementById('quote-status')?.value || '',
+                'quoted-premium': document.getElementById('quoted-premium')?.value || '',
+                'policy-type': document.getElementById('policy-type')?.value || '',
+                'policy-number': document.getElementById('policy-number')?.value || '',
+                'renewal-date': document.getElementById('renewal-date')?.value || '',
+                'premium-amount': document.getElementById('premium-amount')?.value || '',
+                'onedrive-link': document.getElementById('onedrive-link')?.value || ''
+            };
+            
+            console.log('Form data being saved:', formData);
+            console.log('Name field value:', formData.name);
+            
+            // Ensure name is not empty
+            if (!formData.name || formData.name.trim() === '') {
+                alert('Please enter a name');
+                return;
+            }
+            
+            if (prospectIdInput.value) {
+                // Edit existing
+                const index = prospects.findIndex(p => p.id === prospectIdInput.value);
+                if (index > -1) {
+                    console.log('Updating prospect at index:', index);
+                    console.log('Existing prospect:', prospects[index]);
+                    prospects[index] = {...prospects[index], ...formData};
+                    console.log('Updated prospect:', prospects[index]);
+                } else {
+                    const clientIndex = clients.findIndex(c => c.id === prospectIdInput.value);
+                    if (clientIndex > -1) {
+                        console.log('Updating client at index:', clientIndex);
+                        console.log('Existing client:', clients[clientIndex]);
+                        clients[clientIndex] = {...clients[clientIndex], ...formData};
+                        console.log('Updated client:', clients[clientIndex]);
+                    }
+                }
+            } else {
+                // Add new
+                formData.communications = [];
+                formData.activities = [];
+                
+                // Add to the correct list based on the current modal type
+                if (window.currentModalType === 'client') {
+                    clients.push(formData);
+                } else {
+                    prospects.push(formData);
+                }
+            }
+            
+            saveData();
+            closeProspectModal();
+        });
+
+        taskForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                id: taskIdInput.value || Date.now().toString(),
+                description: document.getElementById('taskDescription').value,
+                dueDate: document.getElementById('taskDueDate').value,
+                priority: document.getElementById('taskPriority').value,
+                status: document.getElementById('taskStatus').value,
+                assignedTo: document.getElementById('taskAssignedTo').value,
+                linkedId: taskLinkSelect.value,
+                phone: document.getElementById('taskPhone').value,
+                email: document.getElementById('taskEmail').value,
+                notes: document.getElementById('taskNotes').value,
+                communications: tasks.find(t => t.id === taskIdInput.value)?.communications || []
+            };
+            
+            if (taskIdInput.value) {
+                const index = tasks.findIndex(t => t.id === taskIdInput.value);
+                if (index > -1) {
+                    tasks[index] = formData;
+                }
+            } else {
+                tasks.push(formData);
+            }
+            
+            saveData();
+            closeTaskModal();
+        });
+        
+        // Communication form submission
+        if (communicationForm) {
+            communicationForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                if (!currentEditingPerson) return;
+                
+                // Get form values with logging
+                const typeElement = document.getElementById('commType');
+                const dateElement = document.getElementById('commDate');
+                const timeElement = document.getElementById('commTime');
+                const notesElement = document.getElementById('commNotes');
+                const followUpElement = document.getElementById('commFollowUp');
+                
+                console.log('Form elements:', {
+                    type: typeElement?.value,
+                    date: dateElement?.value,
+                    time: timeElement?.value,
+                    notes: notesElement?.value,
+                    followUp: followUpElement?.checked
+                });
+                
+                const commData = {
+                    type: typeElement?.value || 'note',
+                    date: (dateElement?.value && timeElement?.value) ? 
+                          dateElement.value + 'T' + timeElement.value : 
+                          new Date().toISOString(),
+                    notes: notesElement?.value || '',
+                    followUp: followUpElement?.checked || false
+                };
+                
+                console.log('Adding communication:', commData);
+                console.log('Current editing person:', currentEditingPerson);
+                
+                // Update based on the type stored
+                if (currentEditingPerson.type === 'task') {
+                    const index = tasks.findIndex(t => t.id === currentEditingPerson.id);
+                    if (index > -1) {
+                        if (!tasks[index].communications) {
+                            tasks[index].communications = [];
+                        }
+                        tasks[index].communications.push(commData);
+                        console.log('Updated task communications:', tasks[index].communications);
+                    }
+                } else if (currentEditingPerson.type === 'prospect') {
+                    const index = prospects.findIndex(p => p.id === currentEditingPerson.id);
+                    if (index > -1) {
+                        if (!prospects[index].communications) {
+                            prospects[index].communications = [];
+                        }
+                        prospects[index].communications.push(commData);
+                        console.log('Updated prospect communications:', prospects[index].communications);
+                    }
+                } else if (currentEditingPerson.type === 'client') {
+                    const index = clients.findIndex(c => c.id === currentEditingPerson.id);
+                    if (index > -1) {
+                        if (!clients[index].communications) {
+                            clients[index].communications = [];
+                        }
+                        clients[index].communications.push(commData);
+                        console.log('Updated client communications:', clients[index].communications);
+                    }
+                }
+                
+                saveData();
+                
+                communicationModal.classList.add('hidden');
+                currentEditingPerson = null;
+            });
+        }
+        
+        // Quick note form submission
+        if (quickNoteForm) {
+            quickNoteForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                if (!window.currentQuickNotePerson) return;
+                
+                const { person, type } = window.currentQuickNotePerson;
+                const title = document.getElementById('quickNoteTitle').value;
+                const content = document.getElementById('quickNoteContent').value;
+                const noteData = {
+                    type: 'note',
+                    date: new Date().toISOString(),
+                    notes: `${title}: ${content}`,
+                    followUp: false
+                };
+                
+                console.log('Saving quick note:', noteData);
+                
+                // Add note as a communication
+                if (type === 'task') {
+                    const index = tasks.findIndex(t => t.id === person.id);
+                    if (index > -1) {
+                        if (!tasks[index].communications) {
+                            tasks[index].communications = [];
+                        }
+                        tasks[index].communications.push(noteData);
+                    }
+                } else if (type === 'prospect') {
+                    const index = prospects.findIndex(p => p.id === person.id);
+                    if (index > -1) {
+                        if (!prospects[index].communications) {
+                            prospects[index].communications = [];
+                        }
+                        prospects[index].communications.push(noteData);
+                    }
+                } else if (type === 'client') {
+                    const index = clients.findIndex(c => c.id === person.id);
+                    if (index > -1) {
+                        if (!clients[index].communications) {
+                            clients[index].communications = [];
+                        }
+                        clients[index].communications.push(noteData);
+                    }
+                }
+                
+                saveData();
+                quickNoteModal.classList.add('hidden');
+                window.currentQuickNotePerson = null;
+                
+                // Show success message (optional)
+                console.log('Quick note saved successfully');
+            });
+        }
+
+        // --- CORE LOGIC ---
+        function deletePerson(id, type) {
+            if (confirm(`Are you sure you want to delete this ${type}?`)) {
+                if (type === 'prospect') {
+                    prospects = prospects.filter(p => p.id !== id);
+                } else {
+                    clients = clients.filter(c => c.id !== id);
+                }
+                // Also delete linked tasks
+                tasks = tasks.filter(t => t.linkedId !== id);
+                saveData();
+            }
+        }
+
+        function convertToClient(id) {
+            const prospectIndex = prospects.findIndex(p => p.id === id);
+            if (prospectIndex > -1) {
+                const [prospect] = prospects.splice(prospectIndex, 1);
+                prospect.status = 'Converted';
+                clients.push(prospect);
+                saveData();
+            }
+        }
+        
+        // --- COMMUNICATION FUNCTIONS ---
+        function openCommunicationModal(person, type) {
+            // Store just the ID and type to ensure we update the right object
+            currentEditingPerson = { id: person.id, type: type, name: person.name || person.description };
+            document.getElementById('commPersonName').textContent = person.name || person.description || 'Task';
+            document.getElementById('commType').value = 'call';
+            document.getElementById('commDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('commTime').value = new Date().toTimeString().slice(0, 5);
+            document.getElementById('commNotes').value = '';
+            document.getElementById('commFollowUp').checked = false;
+            communicationModal.classList.remove('hidden');
+        }
+        
+        function viewCommunicationHistory(person, type) {
+            console.log('Viewing communication history for:', person);
+            console.log('Communications:', person.communications);
+            
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50';
+            modal.innerHTML = `
+                <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-lg bg-white dark:bg-gray-800">
+                    <h3 class="text-xl font-bold mb-4">Communication History - ${person.name || person.description || 'Task'}</h3>
+                    <div class="max-h-96 overflow-y-auto">
+                        ${(person.communications || []).length > 0 ? 
+                            person.communications.map(comm => `
+                                <div class="border-l-4 border-blue-500 pl-4 mb-4 pb-4 border-b dark:border-gray-700">
+                                    <div class="flex justify-between items-start">
+                                        <div>
+                                            <span class="font-semibold">${comm.type.charAt(0).toUpperCase() + comm.type.slice(1)}</span>
+                                            <p class="text-sm text-gray-600 dark:text-gray-400">${comm.date ? new Date(comm.date).toLocaleString() : 'No date'}</p>
+                                        </div>
+                                        ${comm.followUp ? '<span class="text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Follow-up Required</span>' : ''}
+                                    </div>
+                                    <p class="mt-2">${comm.notes || comm.summary || 'No notes'}</p>
+                                </div>
+                            `).join('') :
+                            '<p class="text-gray-500">No communications recorded yet.</p>'
+                        }
+                    </div>
+                    <div class="mt-4 flex justify-end">
+                        <button onclick="this.closest('.fixed').remove()" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+        
+        function printCommunicationHistory(person) {
+            const printWindow = window.open('', '_blank');
+            const comms = person.communications || [];
+            const html = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Communication History - ${person.name}</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 20px; }
+                        h1 { color: #333; }
+                        .comm-item { margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #ddd; }
+                        .comm-header { font-weight: bold; margin-bottom: 5px; }
+                        .comm-date { color: #666; font-size: 14px; }
+                        .comm-notes { margin-top: 10px; }
+                    </style>
+                </head>
+                <body>
+                    <h1>Communication History</h1>
+                    <h2>${person.name}</h2>
+                    <p>Generated: ${new Date().toLocaleString()}</p>
+                    <hr>
+                    ${comms.map(comm => `
+                        <div class="comm-item">
+                            <div class="comm-header">${comm.type.charAt(0).toUpperCase() + comm.type.slice(1)}</div>
+                            <div class="comm-date">${comm.date ? new Date(comm.date).toLocaleString() : 'No date'}</div>
+                            <div class="comm-notes">${comm.notes || comm.summary || 'No notes'}</div>
+                        </div>
+                    `).join('')}
+                </body>
+                </html>
+            `;
+            printWindow.document.write(html);
+            printWindow.document.close();
+            printWindow.print();
+        }
+        
+        function downloadCommunicationHistory(person) {
+            const comms = person.communications || [];
+            const csvContent = [
+                ['Date', 'Type', 'Notes', 'Follow-up Required'],
+                ...comms.map(comm => [
+                    comm.date ? new Date(comm.date).toLocaleString() : 'No date',
+                    comm.type,
+                    (comm.notes || comm.summary || 'No notes').replace(/,/g, ';'),
+                    comm.followUp ? 'Yes' : 'No'
+                ])
+            ].map(row => row.join(',')).join('\n');
+            
+            const blob = new Blob([csvContent], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${person.name.replace(/\s+/g, '_')}_communications_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        function scheduleMeeting(person, type) {
+            // Open communication modal with meeting type pre-selected
+            currentEditingPerson = { id: person.id, type: type, name: person.name || person.description };
+            document.getElementById('commPersonName').textContent = person.name || person.description || 'Task';
+            document.getElementById('commType').value = 'meeting';
+            document.getElementById('commDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('commTime').value = new Date().toTimeString().slice(0, 5);
+            document.getElementById('commNotes').value = 'Meeting scheduled';
+            document.getElementById('commFollowUp').checked = true;
+            communicationModal.classList.remove('hidden');
+        }
+        
+        function openQuickNoteModal(person, type) {
+            // Store the person info for when the note is saved
+            window.currentQuickNotePerson = { person, type };
+            
+            // Reset the form
+            document.getElementById('quickNoteForm').reset();
+            
+            // Open the modal
+            quickNoteModal.classList.remove('hidden');
+        }
+        
+        function logQuickCall(person, type) {
+            // Open communication modal with call type pre-selected
+            currentEditingPerson = { id: person.id, type: type, name: person.name || person.description };
+            document.getElementById('commPersonName').textContent = person.name || person.description || 'Task';
+            document.getElementById('commType').value = 'call';
+            document.getElementById('commDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('commTime').value = new Date().toTimeString().slice(0, 5);
+            document.getElementById('commNotes').value = 'Quick call logged';
+            document.getElementById('commFollowUp').checked = false;
+            communicationModal.classList.remove('hidden');
+        }
+        
+        function createQuickTask(person, type) {
+            taskIdInput.value = '';
+            document.getElementById('taskDescription').value = `Follow up with ${person.name}`;
+            document.getElementById('taskDueDate').value = '';
+            document.getElementById('taskPriority').value = 'Medium';
+            document.getElementById('taskStatus').value = 'Pending';
+            document.getElementById('taskAssignedTo').value = '';
+            document.getElementById('taskPhone').value = person.phone || '';
+            document.getElementById('taskEmail').value = person.email || '';
+            document.getElementById('taskNotes').value = '';
+            taskLinkSelect.value = person.id;
+            taskModalTitle.textContent = 'Add New Task';
+            taskModal.classList.remove('hidden');
+        }
+        
+        function openTaskCommunicationModal(task) {
+            // Store just the ID and type to ensure we update the right object
+            currentEditingPerson = { id: task.id, type: 'task', name: task.description };
+            document.getElementById('commPersonName').textContent = task.description;
+            document.getElementById('commType').value = 'note';
+            document.getElementById('commDate').value = new Date().toISOString().split('T')[0];
+            document.getElementById('commTime').value = new Date().toTimeString().slice(0, 5);
+            document.getElementById('commNotes').value = '';
+            document.getElementById('commFollowUp').checked = false;
+            communicationModal.classList.remove('hidden');
+        }
+        
+        function logQuickCallForTask(task) {
+            const call = {
+                type: 'call',
+                date: new Date().toISOString(),
+                notes: 'Quick call logged',
+                followUp: false
+            };
+            
+            if (!task.communications) task.communications = [];
+            task.communications.push(call);
+            
+            const index = tasks.findIndex(t => t.id === task.id);
+            if (index > -1) {
+                tasks[index] = task;
+                saveData();
+            }
+        }
+        
+        function openEmailTemplateSelector(person) {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50';
+            modal.innerHTML = `
+                <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-lg bg-white dark:bg-gray-800">
+                    <h3 class="text-xl font-bold mb-4">Select Email Template</h3>
+                    <div class="grid gap-4">
+                        ${emailTemplates.map(template => `
+                            <div class="border rounded-lg p-4 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer" 
+                                 onclick="sendEmailWithTemplate('${template.id}', '${person.id}', '${person.email}')">
+                                <h4 class="font-semibold">${template.name}</h4>
+                                <p class="text-sm text-gray-600 dark:text-gray-400">${template.subject}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="mt-4 flex justify-end">
+                        <button onclick="this.closest('.fixed').remove()" class="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded">
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+        
+        function getCommIcon(type) {
+            const icons = {
+                call: '<i class="fas fa-phone text-green-500"></i>',
+                email: '<i class="fas fa-envelope text-blue-500"></i>',
+                meeting: '<i class="fas fa-users text-purple-500"></i>',
+                note: '<i class="fas fa-sticky-note text-yellow-500"></i>'
+            };
+            return icons[type] || '<i class="fas fa-comment text-gray-500"></i>';
+        }
+        
+        window.sendEmailWithTemplate = function(templateId, personId, email) {
+            const template = emailTemplates.find(t => t.id === templateId);
+            const person = [...prospects, ...clients].find(p => p.id === personId);
+            
+            if (template && person) {
+                const subject = template.subject.replace('{{name}}', person.name);
+                const content = template.content.replace(/{{name}}/g, person.name);
+                
+                // In a real app, this would send the email
+                // For now, we'll just open the default email client
+                window.location.href = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(content)}`;
+                
+                // Log the communication
+                const comm = {
+                    type: 'email',
+                    date: new Date().toISOString(),
+                    notes: `Sent email: ${template.name}`,
+                    followUp: false
+                };
+                
+                if (!person.communications) person.communications = [];
+                person.communications.push(comm);
+                
+                const list = prospects.find(p => p.id === personId) ? prospects : clients;
+                const index = list.findIndex(p => p.id === personId);
+                if (index > -1) {
+                    list[index] = person;
+                    saveData();
+                }
+                
+                // Close the modal
+                document.querySelector('.fixed').remove();
+            }
+        }
+
+        // --- NAVIGATION ---
+        function switchView(view) {
+            currentView = view;
+            Object.values(panes).forEach(pane => pane.classList.add('hidden'));
+            Object.values(tabs).forEach(tab => tab.classList.remove('border-blue-500', 'text-blue-600', 'dark:text-blue-400'));
+            Object.values(tabs).forEach(tab => tab.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300'));
+
+            panes[view].classList.remove('hidden');
+            tabs[view].classList.add('border-blue-500', 'text-blue-600', 'dark:text-blue-400');
+            tabs[view].classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+            
+            renderAll();
+        }
+        
+        // --- DATA IMPORT/EXPORT ---
+        document.getElementById('importDataBtn').addEventListener('click', () => {
+            document.getElementById('importFile').click();
+        });
+        
+        document.getElementById('importFile').addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        if (data.prospects && data.clients && data.tasks) {
+                            prospects = data.prospects;
+                            clients = data.clients;
+                            tasks = data.tasks;
+                            quickNotes = data.quickNotes || [];
+                            emailTemplates = data.emailTemplates || defaultTemplates;
+                            saveData();
+                            alert('Data imported successfully!');
+                        } else {
+                            alert('Invalid data file format.');
+                        }
+                    } catch (error) {
+                         alert('Error reading file.');
+                    }
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        document.getElementById('exportDataBtn').addEventListener('click', () => {
+            const data = JSON.stringify({ prospects, clients, tasks, quickNotes, emailTemplates }, null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const date = new Date().toISOString().slice(0, 10);
+            a.download = `client-data-backup-${date}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        // --- EVENT LISTENERS ---
+        document.getElementById('addProspectBtn').addEventListener('click', () => openProspectModal());
+        document.getElementById('addClientBtn').addEventListener('click', () => openProspectModal(null, 'client'));
+        document.getElementById('cancelProspect').addEventListener('click', closeProspectModal);
+        
+        document.getElementById('addTaskBtn').addEventListener('click', () => openTaskModal());
+        document.getElementById('cancelTask').addEventListener('click', closeTaskModal);
+        document.getElementById('cancelCommunication')?.addEventListener('click', () => {
+            communicationModal.classList.add('hidden');
+            currentEditingPerson = null;
+        });
+        
+        document.getElementById('cancelQuickNote')?.addEventListener('click', () => {
+            quickNoteModal.classList.add('hidden');
+            window.currentQuickNotePerson = null;
+        });
+
+        // Enhanced global search functionality
+        const clearSearchBtn = document.getElementById('clearSearchBtn');
+        
+        function performGlobalSearch() {
+            const searchTerm = searchInput.value.toLowerCase().trim();
+            
+            // Show/hide clear button
+            if (searchTerm) {
+                clearSearchBtn.classList.remove('hidden');
+            } else {
+                clearSearchBtn.classList.add('hidden');
+            }
+            
+            // Update search indicator
+            if (searchTerm) {
+                document.querySelectorAll('.search-indicator').forEach(el => {
+                    el.textContent = `Searching for: "${searchTerm}"`;
+                    el.classList.remove('hidden');
+                });
+            } else {
+                document.querySelectorAll('.search-indicator').forEach(el => {
+                    el.classList.add('hidden');
+                });
+            }
+            
+            // Perform search across all sections
+            renderAll();
+            
+            // Show search results count
+            if (searchTerm) {
+                const prospectCount = prospects.filter(p => 
+                    (p.name || '').toLowerCase().includes(searchTerm) ||
+                    (p.notes || '').toLowerCase().includes(searchTerm) ||
+                    (Array.isArray(p.tags) ? p.tags : []).some(t => t.toLowerCase().includes(searchTerm))
+                ).length;
+                
+                const clientCount = clients.filter(c => 
+                    (c.name || '').toLowerCase().includes(searchTerm) ||
+                    (c.notes || '').toLowerCase().includes(searchTerm) ||
+                    (Array.isArray(c.tags) ? c.tags : []).some(t => t.toLowerCase().includes(searchTerm))
+                ).length;
+                
+                const taskCount = tasks.filter(t => 
+                    (t.description || '').toLowerCase().includes(searchTerm) ||
+                    (t.notes || '').toLowerCase().includes(searchTerm) ||
+                    (t.assignedTo || '').toLowerCase().includes(searchTerm)
+                ).length;
+                
+                console.log(`Search results - Prospects: ${prospectCount}, Clients: ${clientCount}, Tasks: ${taskCount}`);
+            }
+        }
+        
+        // Clear search functionality
+        clearSearchBtn.addEventListener('click', () => {
+            searchInput.value = '';
+            mobileSearchInput.value = '';
+            performGlobalSearch();
+            searchInput.focus();
+        });
+        
+        searchInput.addEventListener('input', performGlobalSearch);
+        mobileSearchInput.addEventListener('input', (e) => {
+            searchInput.value = e.target.value;
+            performGlobalSearch();
+        });
+        
+        Object.keys(tabs).forEach(key => {
+            tabs[key].addEventListener('click', (e) => {
+                e.preventDefault();
+                switchView(key);
+            });
+        });
+        
+        document.getElementById('compare-selected').addEventListener('click', displayComparisonResults);
+
+        // Accordion logic
+        prospectModal.addEventListener('click', function(e) {
+            const header = e.target.closest('.accordion-trigger');
+            if (header) {
+                const content = header.nextElementSibling;
+                const svg = header.querySelector('svg');
+                if (content.style.maxHeight) {
+                    content.style.maxHeight = null;
+                    svg.style.transform = 'rotate(0deg)';
+                } else {
+                    content.style.maxHeight = content.scrollHeight + "px";
+                    svg.style.transform = 'rotate(180deg)';
+                }
+            }
+        });
+        
+        // Theme toggle
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const lightIcon = document.getElementById('theme-icon-light');
+        const darkIcon = document.getElementById('theme-icon-dark');
+        
+        const applyTheme = (theme) => {
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+                lightIcon.classList.add('hidden');
+                darkIcon.classList.remove('hidden');
+            } else {
+                document.documentElement.classList.remove('dark');
+                lightIcon.classList.remove('hidden');
+                darkIcon.classList.add('hidden');
+            }
+        }
+        
+        themeToggleBtn.addEventListener('click', () => {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            applyTheme(isDark ? 'dark' : 'light');
+        });
+        
+        // Toggle Won/Lost visibility
+        document.getElementById('toggleWonLostBtn').addEventListener('click', () => {
+            showWonLost = !showWonLost;
+            renderAll();
+            const btn = document.getElementById('toggleWonLostBtn');
+            btn.title = showWonLost ? 'Hide Won/Lost' : 'Show Won/Lost';
+            btn.classList.toggle('bg-gray-200', showWonLost);
+            btn.classList.toggle('dark:bg-gray-700', showWonLost);
+        });
+
+        // Task filters
+        document.getElementById('taskFilterPriority').addEventListener('change', () => renderTasks(searchInput.value.toLowerCase()));
+        document.getElementById('taskFilterStatus').addEventListener('change', () => renderTasks(searchInput.value.toLowerCase()));
+
+        // Task selection - removed since we're not using table anymore
+        // The select all functionality is now handled in the task cards
+        
+        // Bulk actions
+        document.getElementById('bulkCompleteBtn')?.addEventListener('click', () => {
+            selectedTaskIds.forEach(taskId => {
+                const index = tasks.findIndex(t => t.id === taskId);
+                if (index > -1) {
+                    tasks[index].status = 'Completed';
+                }
+            });
+            selectedTaskIds.clear();
+            saveData();
+        });
+        
+        document.getElementById('bulkDeleteBtn')?.addEventListener('click', () => {
+            if (confirm(`Are you sure you want to delete ${selectedTaskIds.size} tasks?`)) {
+                tasks = tasks.filter(t => !selectedTaskIds.has(t.id));
+                selectedTaskIds.clear();
+                saveData();
+            }
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+                e.preventDefault();
+                searchInput.focus();
+            }
+            
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case 'p':
+                        e.preventDefault();
+                        openProspectModal();
+                        break;
+                    case 't':
+                        e.preventDefault();
+                        openTaskModal();
+                        break;
+                    case 'n':
+                        e.preventDefault();
+                        openQuickNoteModal();
+                        break;
+                    case 'd':
+                        e.preventDefault();
+                        themeToggleBtn.click();
+                        break;
+                }
+            }
+            
+            // Tab navigation
+            if (e.key >= '1' && e.key <= '7' && !e.ctrlKey && !e.metaKey && document.activeElement.tagName !== 'INPUT') {
+                const tabIndex = parseInt(e.key) - 1;
+                const tabKeys = Object.keys(tabs);
+                if (tabIndex < tabKeys.length) {
+                    switchView(tabKeys[tabIndex]);
+                }
+            }
+        });
+
+        // --- INITIALIZATION ---
+        function init() {
+            loadData();
+            console.log('Loaded prospects:', prospects.length, 'clients:', clients.length);
+            switchView('prospects');
+            
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            applyTheme(savedTheme);
+        }
+
+        init();
+    });
+    </script>
+</body>
+</html>

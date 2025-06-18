@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Task & Client Manager</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts & Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide-react@0.368.0/dist/lucide-react.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        /* Base styles */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Scrollbar styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        .dark ::-webkit-scrollbar-track {
+            background: #2d3748;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        
+        /* Animation for modals */
+        .modal-enter {
+            animation: fadeIn 0.3s ease-out;
+        }
+        .modal-leave {
+            animation: fadeOut 0.3s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; transform: scale(1); }
+            to { opacity: 0; transform: scale(0.95); }
+        }
+
+        /* Prevent layout shift during theme change */
+        .theme-transition {
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        
+        /* Custom card styling for a bit of flair */
+        .status-tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-weight: 500;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Accordion styles */
+        .accordion-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-in-out;
+        }
+
+        /* Card details expansion */
+        .card-details {
+             max-height: 0;
+             overflow: hidden;
+             transition: max-height 0.5s ease-in-out, padding-top 0.5s ease-in-out, margin-top 0.5s ease-in-out;
+             padding-top: 0;
+             margin-top: 0;
+        }
+        .card-details.expanded {
+            max-height: 500px; /* Adjust as needed */
+            padding-top: 1rem;
+            margin-top: 1rem;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-800 dark:text-gray-200 theme-transition">
+
+    <!-- App Container -->
+    <div id="app" class="min-h-screen flex flex-col">
+
+        <!-- Header -->
+        <header class="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-40 theme-transition">
+            <div class="container mx-auto px-4 py-3 flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <svg class="w-8 h-8 text-blue-600 dark:text-blue-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M4 22C4 17.5817 7.58172 14 12 14C16.4183 14 20 17.5817 20 22H4ZM12 13C8.68629 13 6 10.3137 6 7C6 3.68629 8.68629 1 12 1C15.3137 1 18 3.68629 18 7C18 10.3137 15.3137 13 12 13Z"></path></svg>
+                    <h1 class="text-xl md:text-2xl font-bold text-gray-800 dark:text-white">Client & Task Hub</h1>
+                </div>
+                <div class="flex-1 max-w-lg mx-4 hidden sm:block">
+                     <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3">
+                            <svg class="w-5 h-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        </span>
+                        <input type="text" id="searchInput" placeholder="Search by name, tag, or note..." class="w-full pl-10 pr-4 py-2 border rounded-full bg-gray-100 dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button id="addProspectBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 flex items-center space-x-2">
+                        <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M11 11V5H13V11H19V13H13V19H11V13H5V11H11Z"></path></svg>
+                        <span class="hidden md:inline">New Prospect</span>
+                    </button>
+                    <button id="theme-toggle" class="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition duration-300">
+                        <svg id="theme-icon-light" class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.25a.75.75 0 0 1 .75.75v2.25a.75.75 0 0 1-1.5 0V3a.75.75 0 0 1 .75-.75ZM7.5 12a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM18.697 19.823a.75.75 0 0 1 1.06-1.06l1.591 1.59a.75.75 0 1 1-1.06 1.06l-1.591-1.59ZM21.75 12a.75.75 0 0 1-.75.75h-2.25a.75.75 0 0 1 0-1.5h2.25a.75.75 0 0 1 .75.75ZM17.636 6.364a.75.75 0 0 1-1.06-1.06l1.591-1.591a.75.75 0 1 1 1.06 1.06l-1.591 1.591ZM12 21.75a.75.75 0 0 1-.75-.75v-2.25a.75.75 0 0 1 1.5 0v2.25a.75.75 0 0 1-.75.75ZM4.177 18.697a.75.75 0 0 1-1.06-1.06l1.59-1.591a.75.75 0 1 1 1.06 1.06l-1.59 1.591ZM3 12a.75.75 0 0 1 .75-.75h2.25a.75.75 0 0 1 0 1.5H3.75A.75.75 0 0 1 3 12ZM6.364 6.364a.75.75 0 0 1 1.06-1.06l1.591 1.591a.75.75 0 1 1-1.06 1.06L6.364 6.364Z"></path></svg>
+                        <svg id="theme-icon-dark" class="w-6 h-6 hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M9.528 1.718a.75.75 0 0 1 .162.819A8.97 8.97 0 0 0 9 6a9 9 0 0 0 9 9 8.97 8.97 0 0 0 3.463-.69.75.75 0 0 1 .981.98 10.503 10.503 0 0 1-9.694 6.46c-5.799 0-10.5-4.701-10.5-10.5 0-4.368 2.667-8.112 6.46-9.694a.75.75 0 0 1 .818.162Z" clip-rule="evenodd"></path></svg>
+                    </button>
+                </div>
+            </div>
+            <!-- Mobile Search Bar -->
+            <div class="px-4 pb-3 sm:hidden">
+                <input type="text" id="mobileSearchInput" placeholder="Search..." class="w-full px-4 py-2 border rounded-full bg-gray-100 dark:bg-gray-700 dark:border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-1 container mx-auto p-4">
+            <!-- Navigation Tabs -->
+            <div class="mb-6 border-b border-gray-200 dark:border-gray-700">
+                <nav class="-mb-px flex space-x-6 overflow-x-auto" aria-label="Tabs">
+                    <a href="#" id="prospectsTab" class="tab-link border-blue-500 text-blue-600 dark:text-blue-400 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Prospects</a>
+                    <a href="#" id="clientsTab" class="tab-link border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:border-gray-500 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Clients</a>
+                    <a href="#" id="tasksTab" class="tab-link border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:border-gray-500 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Task Manager</a>
+                    <a href="#" id="pipelineTab" class="tab-link border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:border-gray-500 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Sales Pipeline</a>
+                    <a href="#" id="comparisonTab" class="tab-link border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:border-gray-500 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Quote Comparison</a>
+                    <a href="#" id="analyticsTab" class="tab-link border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:border-gray-500 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Analytics</a>
+                </nav>
+            </div>
+
+            <!-- Content Panes -->
+            <div id="prospectsView" class="tab-pane">
+                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="prospectsContainer"></div>
+            </div>
+            <div id="clientsView" class="tab-pane hidden">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="clientsContainer"></div>
+            </div>
+            <div id="tasksView" class="tab-pane hidden">
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+                         <h2 class="text-2xl font-bold mb-4 md:mb-0">Task Manager</h2>
+                         <button id="addTaskBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full transition duration-300 flex items-center space-x-2">
+                            <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M11 11V5H13V11H19V13H13V19H11V13H5V11H11Z"></path></svg>
+                            <span>Add Task</span>
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left" id="task-table">
+                            <thead class="bg-gray-50 dark:bg-gray-700">
+                                <tr>
+                                    <th class="p-4">Status</th>
+                                    <th class="p-4">Description</th>
+                                    <th class="p-4">Due Date</th>
+                                    <th class="p-4">Priority</th>
+                                    <th class="p-4">Assigned To</th>
+                                    <th class="p-4">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tasksContainer">
+                                <!-- Tasks will be rendered here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+             <div id="pipelineView" class="tab-pane hidden">
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
+                    <h2 class="text-2xl font-bold mb-6">Sales Pipeline</h2>
+                    <div class="flex space-x-4 overflow-x-auto pb-4" id="pipelineContainer">
+                        <!-- Pipeline stages will be dynamically created here -->
+                    </div>
+                </div>
+            </div>
+            <div id="comparisonView" class="tab-pane hidden">
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
+                    <h2 class="text-2xl font-bold mb-6">Quote Comparison Tool</h2>
+                    <div id="quote-comparison-tool">
+                        <div id="comparison-prospects" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6"></div>
+                        <button id="compare-selected" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full disabled:bg-gray-400" disabled>Compare Selected</button>
+                        <div id="comparison-results" class="mt-6 overflow-x-auto"></div>
+                    </div>
+                </div>
+            </div>
+            <div id="analyticsView" class="tab-pane hidden">
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
+                    <h2 class="text-2xl font-bold mb-6">Analytics Dashboard</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
+                            <h3 class="font-bold text-lg mb-2">Prospects vs Clients</h3>
+                            <canvas id="prospectsClientsChart"></canvas>
+                        </div>
+                        <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
+                            <h3 class="font-bold text-lg mb-2">Task Status</h3>
+                            <canvas id="taskStatusChart"></canvas>
+                        </div>
+                        <div class="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
+                            <h3 class="font-bold text-lg mb-2">Key Metrics</h3>
+                            <div class="space-y-2 mt-4">
+                               <p>Total Prospects: <span id="totalProspects" class="font-bold">0</span></p>
+                               <p>Total Clients: <span id="totalClients" class="font-bold">0</span></p>
+                               <p>Total Tasks: <span id="totalTasks" class="font-bold">0</span></p>
+                               <p>Completed Tasks: <span id="completedTasks" class="font-bold">0</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+        
+        <!-- Footer with Data Management -->
+        <footer class="bg-white dark:bg-gray-800 shadow-inner mt-8 py-4">
+            <div class="container mx-auto px-4 flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+                <button id="importDataBtn" class="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-bold py-2 px-4 rounded-full transition duration-300">Import Data</button>
+                <input type="file" id="importFile" class="hidden" accept=".json">
+                <button id="exportDataBtn" class="bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 font-bold py-2 px-4 rounded-full transition duration-300">Export Data</button>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Modals -->
+    <!-- Prospect/Client Modal -->
+    <div id="prospectModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 hidden modal-enter">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 w-full max-w-4xl m-4 max-h-screen overflow-y-auto">
+            <h2 id="modalTitle" class="text-2xl font-bold mb-6">Add New Prospect</h2>
+            <form id="prospectForm">
+                <input type="hidden" id="prospectId">
+                <div class="space-y-6">
+                    <!-- Basic Info -->
+                    <div>
+                        <h3 class="text-lg font-medium leading-6 text-gray-900 dark:text-white accordion-trigger cursor-pointer flex justify-between">
+                            <span>Basic Information</span>
+                            <svg class="w-5 h-5 transform transition-transform" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                        </h3>
+                        <div class="accordion-content mt-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="md:col-span-2">
+                                    <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
+                                    <input type="text" id="name" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-gray-50 dark:bg-gray-700" required>
+                                </div>
+                                <div>
+                                    <label for="phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Phone</label>
+                                    <input type="tel" id="phone" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-gray-50 dark:bg-gray-700">
+                                </div>
+                                <div>
+                                    <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
+                                    <input type="email" id="email" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-gray-50 dark:bg-gray-700">
+                                </div>
+                                <div>
+                                    <label for="status" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
+                                    <select id="status" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-gray-50 dark:bg-gray-700"></select>
+                                </div>
+                                <div>
+                                    <label for="tags" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Tags (comma separated)</label>
+                                    <input type="text" id="tags" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-gray-50 dark:bg-gray-700">
+                                </div>
+                                 <div class="md:col-span-2">
+                                    <label for="notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Notes</label>
+                                    <textarea id="notes" rows="4" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-gray-50 dark:bg-gray-700"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Quote Info -->
+                    <div>
+                        <h3 class="text-lg font-medium leading-6 text-gray-900 dark:text-white accordion-trigger cursor-pointer flex justify-between">
+                            <span>Quote Information</span>
+                             <svg class="w-5 h-5 transform transition-transform" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                        </h3>
+                        <div class="accordion-content mt-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div>
+                                    <label for="quote-status" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Quote Status</label>
+                                    <input type="text" id="quote-status" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm sm:text-sm bg-gray-50 dark:bg-gray-700">
+                                </div>
+                                <div>
+                                    <label for="quoted-premium" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Quoted Premium</label>
+                                    <input type="number" id="quoted-premium" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm sm:text-sm bg-gray-50 dark:bg-gray-700">
+                                </div>
+                                <div>
+                                    <label for="policy-type" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Policy Type</label>
+                                    <input type="text" id="policy-type" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm sm:text-sm bg-gray-50 dark:bg-gray-700">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Policy Details -->
+                     <div id="policy-details-section">
+                        <h3 class="text-lg font-medium leading-6 text-gray-900 dark:text-white accordion-trigger cursor-pointer flex justify-between">
+                            <span>Policy Details</span>
+                             <svg class="w-5 h-5 transform transition-transform" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
+                        </h3>
+                        <div class="accordion-content mt-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div>
+                                    <label for="policy-number" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Policy Number</label>
+                                    <input type="text" id="policy-number" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm sm:text-sm bg-gray-50 dark:bg-gray-700">
+                                </div>
+                                 <div>
+                                    <label for="renewal-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Renewal Date</label>
+                                    <input type="date" id="renewal-date" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm sm:text-sm bg-gray-50 dark:bg-gray-700">
+                                </div>
+                                <div>
+                                    <label for="premium-amount" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Premium Amount</label>
+                                    <input type="number" id="premium-amount" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm sm:text-sm bg-gray-50 dark:bg-gray-700">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-8 flex justify-end space-x-3">
+                    <button type="button" id="cancelProspect" class="bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-200 font-bold py-2 px-4 rounded-full transition duration-300">Cancel</button>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-full transition duration-300">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Task Modal -->
+    <div id="taskModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 hidden modal-enter">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-8 w-full max-w-lg m-4 max-h-screen overflow-y-auto">
+            <h2 id="taskModalTitle" class="text-2xl font-bold mb-6">Add New Task</h2>
+            <form id="taskForm">
+                <input type="hidden" id="taskId">
+                <div class="space-y-4">
+                     <div>
+                        <label for="taskDescription" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
+                        <input type="text" id="taskDescription" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-gray-50 dark:bg-gray-700" required>
+                    </div>
+                    <div>
+                        <label for="taskDueDate" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Due Date</label>
+                        <input type="date" id="taskDueDate" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-gray-50 dark:bg-gray-700">
+                    </div>
+                    <div>
+                         <label for="taskPriority" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Priority</label>
+                         <select id="taskPriority" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-gray-50 dark:bg-gray-700">
+                            <option>Low</option>
+                            <option>Medium</option>
+                            <option>High</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="taskStatus" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
+                        <select id="taskStatus" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-gray-50 dark:bg-gray-700">
+                            <option>Not Started</option>
+                            <option>In Progress</option>
+                            <option>Completed</option>
+                        </select>
+                    </div>
+                     <div>
+                        <label for="taskLink" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Link to Prospect/Client</label>
+                        <select id="taskLink" class="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm bg-gray-50 dark:bg-gray-700"></select>
+                    </div>
+                </div>
+                 <div class="mt-8 flex justify-end space-x-3">
+                    <button type="button" id="cancelTask" class="bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 text-gray-800 dark:text-gray-200 font-bold py-2 px-4 rounded-full transition duration-300">Cancel</button>
+                    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full transition duration-300">Save Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- STATE MANAGEMENT ---
+        let prospects = [];
+        let clients = [];
+        let tasks = [];
+        let currentView = 'prospects'; // prospects, clients, tasks, analytics, pipeline, comparison
+
+        const pipelineStages = ['New', 'Contacted', 'Needs Analysis', 'Proposal Sent', 'Negotiation', 'Won', 'Lost'];
+
+        // --- DOM ELEMENTS ---
+        const prospectsContainer = document.getElementById('prospectsContainer');
+        const clientsContainer = document.getElementById('clientsContainer');
+        const tasksContainer = document.getElementById('tasksContainer');
+        const pipelineContainer = document.getElementById('pipelineContainer');
+        const comparisonProspectsContainer = document.getElementById('comparison-prospects');
+        const comparisonResultsContainer = document.getElementById('comparison-results');
+        
+        const prospectModal = document.getElementById('prospectModal');
+        const prospectForm = document.getElementById('prospectForm');
+        const modalTitle = document.getElementById('modalTitle');
+        const prospectIdInput = document.getElementById('prospectId');
+
+        const taskModal = document.getElementById('taskModal');
+        const taskForm = document.getElementById('taskForm');
+        const taskModalTitle = document.getElementById('taskModalTitle');
+        const taskIdInput = document.getElementById('taskId');
+        const taskLinkSelect = document.getElementById('taskLink');
+        
+        const searchInput = document.getElementById('searchInput');
+        const mobileSearchInput = document.getElementById('mobileSearchInput');
+
+        const tabs = {
+            prospects: document.getElementById('prospectsTab'),
+            clients: document.getElementById('clientsTab'),
+            tasks: document.getElementById('tasksTab'),
+            analytics: document.getElementById('analyticsTab'),
+            pipeline: document.getElementById('pipelineTab'),
+            comparison: document.getElementById('comparisonTab'),
+        };
+        const panes = {
+            prospects: document.getElementById('prospectsView'),
+            clients: document.getElementById('clientsView'),
+            tasks: document.getElementById('tasksView'),
+            analytics: document.getElementById('analyticsView'),
+            pipeline: document.getElementById('pipelineView'),
+            comparison: document.getElementById('comparisonView'),
+        };
+        
+        // Chart instances
+        let prospectsClientsChart = null;
+        let taskStatusChart = null;
+
+
+        // --- DATA HANDLING ---
+        function loadData() {
+            prospects = JSON.parse(localStorage.getItem('prospects')) || [];
+            clients = JSON.parse(localStorage.getItem('clients')) || [];
+            tasks = JSON.parse(localStorage.getItem('tasks')) || [];
+        }
+
+        function saveData() {
+            localStorage.setItem('prospects', JSON.stringify(prospects));
+            localStorage.setItem('clients', JSON.stringify(clients));
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+            renderAll();
+        }
+
+        // --- RENDER FUNCTIONS ---
+        function renderAll() {
+            const searchTerm = searchInput.value.toLowerCase();
+            renderProspects(searchTerm);
+            renderClients(searchTerm);
+            renderTasks(searchTerm);
+            if (currentView === 'analytics') renderAnalytics();
+            if (currentView === 'pipeline') renderPipeline();
+            if (currentView === 'comparison') renderQuoteComparison();
+            
+        }
+        
+        const getStatusClass = (status) => {
+             const statusMap = {
+                'new': 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
+                'contacted': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+                'follow-up': 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
+                'interested': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+                'not interested': 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300',
+                'converted': 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-300',
+                'needs analysis': 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300',
+                'proposal sent': 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-300',
+                'negotiation': 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300',
+                'won': 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300',
+                'lost': 'bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-300',
+                'active': 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+                'inactive': 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
+            };
+            return statusMap[status.toLowerCase()] || 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+        };
+
+        function createPersonCard(person, type) {
+            const card = document.createElement('div');
+            card.className = 'bg-white dark:bg-gray-800 rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 p-5 flex flex-col';
+            card.setAttribute('data-id', person.id);
+
+            const tagsHTML = (person.tags || []).map(tag => `<span class="bg-gray-200 dark:bg-gray-700 text-xs font-semibold mr-2 px-2.5 py-0.5 rounded-full">${tag}</span>`).join('');
+            
+            let detailsHTML = `
+                <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                    <div class="font-semibold text-gray-500 dark:text-gray-400">Quote Status</div><div>${person['quote-status'] || 'N/A'}</div>
+                    <div class="font-semibold text-gray-500 dark:text-gray-400">Quoted Premium</div><div>${person['quoted-premium'] ? '$' + person['quoted-premium'] : 'N/A'}</div>
+                    <div class="font-semibold text-gray-500 dark:text-gray-400">Policy Type</div><div>${person['policy-type'] || 'N/A'}</div>
+                </div>
+            `;
+
+            if (type === 'client') {
+                detailsHTML += `
+                <div class="border-t dark:border-gray-600 my-2"></div>
+                <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                    <div class="font-semibold text-gray-500 dark:text-gray-400">Policy #</div><div>${person['policy-number'] || 'N/A'}</div>
+                    <div class="font-semibold text-gray-500 dark:text-gray-400">Renewal</div><div>${person['renewal-date'] || 'N/A'}</div>
+                    <div class="font-semibold text-gray-500 dark:text-gray-400">Premium</div><div>${person['premium-amount'] ? '$' + person['premium-amount'] : 'N/A'}</div>
+                </div>
+                `;
+            }
+
+
+            card.innerHTML = `
+                <div class="flex-grow cursor-pointer card-header">
+                    <div class="flex justify-between items-start">
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">${person.name}</h3>
+                        <div class="status-tag ${getStatusClass(person.status)}">${person.status}</div>
+                    </div>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">${person.email || ''}</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">${person.phone || ''}</p>
+                    <div class="mt-4 text-sm text-gray-600 dark:text-gray-300">
+                        <p class="whitespace-pre-wrap">${person.notes || ''}</p>
+                    </div>
+                    <div class="mt-4">${tagsHTML}</div>
+                </div>
+                
+                <div class="card-details border-t dark:border-gray-700">
+                   ${detailsHTML}
+                </div>
+
+                <div class="border-t dark:border-gray-700 mt-4 pt-4 flex justify-between items-center">
+                    <span class="text-xs text-gray-400">ID: ${person.id.substring(0,8)}</span>
+                    <div class="flex space-x-2">
+                         ${type === 'prospect' ? `<button class="convert-btn text-green-500 hover:text-green-700" title="Convert to Client"><svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M13.0001 16.1716L18.3641 10.8076L19.7783 12.2218L13.0001 19L6.22187 12.2218L7.63609 10.8076L13.0001 16.1716Z"></path><path d="M13 3V16H11V3H13Z"></path></svg></button>` : ''}
+                        <button class="edit-btn text-blue-500 hover:text-blue-700" title="Edit"><svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M15.7279 9.57629L14.3137 8.16207L5 17.4758V19H6.52423L15.7279 9.57629ZM17.1421 8.16207L18.5563 6.74785L17.1421 5.33363L15.7279 6.74785L17.1421 8.16207ZM7.23223 21H3V16.7678L14.3137 5.45408C14.8995 4.86829 15.849 4.86829 16.4348 5.45408L18.5563 7.5756C19.1421 8.16139 19.1421 9.11086 18.5563 9.69665L7.23223 21Z"></path></svg></button>
+                        <button class="delete-btn text-red-500 hover:text-red-700" title="Delete"><svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M17 6H22V8H20V21C20 21.5523 19.5523 22 19 22H5C4.44772 22 4 21.5523 4 21V8H2V6H7V3C7 2.44772 7.44772 2 8 2H16C16.5523 2 17 2.44772 17 3V6ZM18 8H6V20H18V8ZM9 11H11V17H9V11ZM13 11H15V17H13V11ZM9 4V6H15V4H9Z"></path></svg></button>
+                    </div>
+                </div>
+            `;
+            
+            card.querySelector('.card-header').addEventListener('click', () => {
+                card.querySelector('.card-details').classList.toggle('expanded');
+            });
+            card.querySelector('.edit-btn').addEventListener('click', () => openProspectModal(person, type));
+            card.querySelector('.delete-btn').addEventListener('click', () => deletePerson(person.id, type));
+            if (type === 'prospect') {
+                 card.querySelector('.convert-btn').addEventListener('click', () => convertToClient(person.id));
+            }
+            return card;
+        }
+
+        function renderProspects(filter = '') {
+            prospectsContainer.innerHTML = '';
+            const filtered = prospects.filter(p => 
+                p.name.toLowerCase().includes(filter) ||
+                (p.notes || '').toLowerCase().includes(filter) ||
+                (p.tags || []).some(t => t.toLowerCase().includes(filter))
+            );
+            if (filtered.length === 0) {
+                 prospectsContainer.innerHTML = '<p class="text-gray-500 col-span-full text-center">No prospects found. Add one to get started!</p>';
+            } else {
+                filtered.forEach(p => prospectsContainer.appendChild(createPersonCard(p, 'prospect')));
+            }
+        }
+        
+        function renderClients(filter = '') {
+            clientsContainer.innerHTML = '';
+            const filtered = clients.filter(c => 
+                c.name.toLowerCase().includes(filter) ||
+                (c.notes || '').toLowerCase().includes(filter) ||
+                (c.tags || []).some(t => t.toLowerCase().includes(filter))
+            );
+             if (filtered.length === 0) {
+                 clientsContainer.innerHTML = '<p class="text-gray-500 col-span-full text-center">No clients found.</p>';
+            } else {
+                filtered.forEach(c => clientsContainer.appendChild(createPersonCard(c, 'client')));
+            }
+        }
+
+        const getPriorityClass = (priority) => {
+            switch(priority) {
+                case 'High': return 'bg-red-500';
+                case 'Medium': return 'bg-yellow-500';
+                case 'Low': return 'bg-green-500';
+                default: return 'bg-gray-300';
+            }
+        };
+
+        function renderTasks(filter = '') {
+            tasksContainer.innerHTML = '';
+            const filtered = tasks.filter(t => t.description.toLowerCase().includes(filter));
+            
+            if (filtered.length === 0) {
+                 tasksContainer.innerHTML = '<tr><td colspan="6" class="text-center text-gray-500 py-4">No tasks found.</td></tr>';
+                 return;
+            }
+
+            filtered.sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate)).forEach(task => {
+                const taskRow = document.createElement('tr');
+                taskRow.className = "border-b dark:border-gray-700";
+                
+                const linkedPerson = prospects.find(p => p.id === task.linkedId) || clients.find(c => c.id === task.linkedId);
+
+                taskRow.innerHTML = `
+                    <td class="p-4"><input type="checkbox" class="h-5 w-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 task-complete-checkbox" ${task.status === 'Completed' ? 'checked' : ''} data-id="${task.id}"></td>
+                    <td class="p-4 ${task.status === 'Completed' ? 'line-through text-gray-500' : ''}">${task.description}</td>
+                    <td class="p-4">${task.dueDate || 'N/A'}</td>
+                    <td class="p-4"><span class="h-2 w-2 rounded-full inline-block mr-2 ${getPriorityClass(task.priority)}"></span>${task.priority}</td>
+                    <td class="p-4">${linkedPerson ? linkedPerson.name : 'Unassigned'}</td>
+                    <td class="p-4">
+                        <div class="flex items-center space-x-2">
+                            <button class="edit-task-btn text-blue-500 hover:text-blue-700" title="Edit Task" data-id="${task.id}"><svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M15.7279 9.57629L14.3137 8.16207L5 17.4758V19H6.52423L15.7279 9.57629ZM17.1421 8.16207L18.5563 6.74785L17.1421 5.33363L15.7279 6.74785L17.1421 8.16207ZM7.23223 21H3V16.7678L14.3137 5.45408C14.8995 4.86829 15.849 4.86829 16.4348 5.45408L18.5563 7.5756C19.1421 8.16139 19.1421 9.11086 18.5563 9.69665L7.23223 21Z"></path></svg></button>
+                            <button class="delete-task-btn text-red-500 hover:text-red-700" title="Delete Task" data-id="${task.id}"><svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M17 6H22V8H20V21C20 21.5523 19.5523 22 19 22H5C4.44772 22 4 21.5523 4 21V8H2V6H7V3C7 2.44772 7.44772 2 8 2H16C16.5523 2 17 2.44772 17 3V6ZM18 8H6V20H18V8ZM9 11H11V17H9V11ZM13 11H15V17H13V11ZM9 4V6H15V4H9Z"></path></svg></button>
+                        </div>
+                    </td>
+                `;
+
+                taskRow.querySelector('.edit-task-btn').addEventListener('click', (e) => openTaskModal(tasks.find(t => t.id === e.currentTarget.dataset.id)));
+                taskRow.querySelector('.delete-task-btn').addEventListener('click', (e) => deleteTask(e.currentTarget.dataset.id));
+                taskRow.querySelector('.task-complete-checkbox').addEventListener('change', (e) => {
+                     const task = tasks.find(t => t.id === e.currentTarget.dataset.id);
+                     if(task) {
+                         task.status = e.target.checked ? 'Completed' : 'In Progress';
+                         saveData();
+                     }
+                });
+
+                tasksContainer.appendChild(taskRow);
+            });
+        }
+        
+        function renderPipeline() {
+            pipelineContainer.innerHTML = '';
+            pipelineStages.forEach(stage => {
+                const stageColumn = document.createElement('div');
+                stageColumn.className = 'flex-shrink-0 w-72 bg-gray-100 dark:bg-gray-800 rounded-lg p-3';
+                const prospectsInStage = prospects.filter(p => p.status === stage);
+                
+                let cardsHTML = '';
+                prospectsInStage.forEach(p => {
+                    cardsHTML += `
+                        <div class="bg-white dark:bg-gray-700 rounded-md shadow p-3 mb-3" data-id="${p.id}">
+                            <h4 class="font-bold">${p.name}</h4>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">${p['policy-type'] || 'N/A'}</p>
+                            <p class="text-sm font-bold mt-1">${p['quoted-premium'] ? '$' + p['quoted-premium'] : ''}</p>
+                        </div>
+                    `;
+                });
+
+                stageColumn.innerHTML = `
+                    <h3 class="font-bold mb-3 text-lg">${stage} (${prospectsInStage.length})</h3>
+                    <div class="space-y-3">${cardsHTML || '<p class="text-sm text-gray-400">No prospects in this stage.</p>'}</div>
+                `;
+                pipelineContainer.appendChild(stageColumn);
+            });
+        }
+
+        function renderQuoteComparison() {
+            comparisonProspectsContainer.innerHTML = '';
+            prospects.forEach(prospect => {
+                const prospectCheck = document.createElement('div');
+                prospectCheck.innerHTML = `
+                    <label class="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">
+                        <input type="checkbox" class="comparison-checkbox rounded" value="${prospect.id}">
+                        <span>${prospect.name}</span>
+                    </label>
+                `;
+                comparisonProspectsContainer.appendChild(prospectCheck);
+            });
+             comparisonProspectsContainer.addEventListener('change', () => {
+                const selectedCount = document.querySelectorAll('.comparison-checkbox:checked').length;
+                document.getElementById('compare-selected').disabled = selectedCount < 2;
+            });
+        }
+
+        function displayComparisonResults() {
+            const selectedIds = Array.from(document.querySelectorAll('.comparison-checkbox:checked')).map(cb => cb.value);
+            const selectedProspects = prospects.filter(p => selectedIds.includes(p.id));
+
+            comparisonResultsContainer.innerHTML = '';
+            if (selectedProspects.length < 2) {
+                comparisonResultsContainer.innerHTML = '<p>Please select at least two prospects to compare.</p>';
+                return;
+            }
+
+            let tableHTML = `
+                <table class="w-full text-left mt-4">
+                    <thead class="bg-gray-50 dark:bg-gray-700"><tr>
+                        <th class="p-4">Feature</th>
+                        ${selectedProspects.map(p => `<th class="p-4">${p.name}</th>`).join('')}
+                    </tr></thead><tbody>
+            `;
+            const fieldsToCompare = ['status', 'quoted-premium', 'policy-type'];
+            fieldsToCompare.forEach(field => {
+                tableHTML += `<tr class="border-b dark:border-gray-700"><td class="p-4 font-bold">${field.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}</td>`;
+                selectedProspects.forEach(p => {
+                    tableHTML += `<td class="p-4">${p[field] || 'N/A'}</td>`;
+                });
+                tableHTML += `</tr>`;
+            });
+
+            tableHTML += '</tbody></table>';
+            comparisonResultsContainer.innerHTML = tableHTML;
+        }
+
+        function renderAnalytics() {
+            // Key metrics
+            const totalProspects = prospects.length;
+            const totalClients = clients.length;
+            const totalTasksCount = tasks.length;
+            const completedTasksCount = tasks.filter(t => t.status === 'Completed').length;
+
+            document.getElementById('totalProspects').textContent = totalProspects;
+            document.getElementById('totalClients').textContent = totalClients;
+            document.getElementById('totalTasks').textContent = totalTasksCount;
+            document.getElementById('completedTasks').textContent = completedTasksCount;
+
+            // Prospects vs Clients Chart
+            const pvscCtx = document.getElementById('prospectsClientsChart').getContext('2d');
+            if(prospectsClientsChart) prospectsClientsChart.destroy();
+            prospectsClientsChart = new Chart(pvscCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Prospects', 'Clients'],
+                    datasets: [{
+                        data: [totalProspects, totalClients],
+                        backgroundColor: ['#3B82F6', '#10B981'],
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            // Task Status Chart
+            const tscCtx = document.getElementById('taskStatusChart').getContext('2d');
+            const taskStatusData = tasks.reduce((acc, task) => {
+                acc[task.status] = (acc[task.status] || 0) + 1;
+                return acc;
+            }, {});
+            if(taskStatusChart) taskStatusChart.destroy();
+            taskStatusChart = new Chart(tscCtx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(taskStatusData),
+                    datasets: [{
+                        label: 'Task Count',
+                        data: Object.values(taskStatusData),
+                        backgroundColor: ['#EF4444', '#F59E0B', '#22C55E'],
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+            });
+        }
+        
+        // --- MODAL & FORM HANDLING ---
+        function populateStatusDropdown(isClient = false) {
+            const statusSelect = document.getElementById('status');
+            statusSelect.innerHTML = '';
+            const options = isClient ? 
+                ['Active', 'Inactive', 'Converted'] :
+                ['New', 'Contacted', 'Follow-up', 'Interested', 'Not Interested', 'Needs Analysis', 'Proposal Sent', 'Negotiation', 'Won', 'Lost'];
+            
+            options.forEach(opt => {
+                const optionEl = document.createElement('option');
+                optionEl.value = opt;
+                optionEl.textContent = opt;
+                statusSelect.appendChild(optionEl);
+            });
+        }
+
+
+        function openProspectModal(personToEdit = null, type = 'prospect') {
+            prospectForm.reset();
+            const isClient = type === 'client';
+            populateStatusDropdown(isClient);
+            document.getElementById('policy-details-section').style.display = isClient ? 'block' : 'none';
+
+            if (personToEdit) {
+                modalTitle.textContent = `Edit ${type === 'prospect' ? 'Prospect' : 'Client'}`;
+                prospectIdInput.value = personToEdit.id;
+                document.getElementById('name').value = personToEdit.name;
+                document.getElementById('phone').value = personToEdit.phone || '';
+                document.getElementById('email').value = personToEdit.email || '';
+                document.getElementById('status').value = personToEdit.status;
+                document.getElementById('tags').value = (personToEdit.tags || []).join(', ');
+                document.getElementById('notes').value = personToEdit.notes || '';
+                document.getElementById('quote-status').value = personToEdit['quote-status'] || '';
+                document.getElementById('quoted-premium').value = personToEdit['quoted-premium'] || '';
+                document.getElementById('policy-type').value = personToEdit['policy-type'] || '';
+                if(isClient) {
+                     document.getElementById('policy-number').value = personToEdit['policy-number'] || '';
+                     document.getElementById('renewal-date').value = personToEdit['renewal-date'] || '';
+                     document.getElementById('premium-amount').value = personToEdit['premium-amount'] || '';
+                }
+
+            } else {
+                modalTitle.textContent = 'Add New Prospect';
+                prospectIdInput.value = '';
+            }
+            prospectModal.classList.remove('hidden');
+            // Open first accordion by default
+            const firstAccordion = prospectModal.querySelector('.accordion-content');
+            if(firstAccordion) {
+                firstAccordion.style.maxHeight = firstAccordion.scrollHeight + "px";
+                firstAccordion.previousElementSibling.querySelector('svg').style.transform = 'rotate(180deg)';
+            }
+        }
+        
+        function closeProspectModal() {
+            prospectModal.classList.add('hidden');
+        }
+        
+        prospectForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const id = prospectIdInput.value || `p_${new Date().getTime()}`;
+            const isEditing = !!prospectIdInput.value;
+            
+            const personData = {
+                id,
+                name: document.getElementById('name').value,
+                phone: document.getElementById('phone').value,
+                email: document.getElementById('email').value,
+                status: document.getElementById('status').value,
+                tags: document.getElementById('tags').value.split(',').map(t => t.trim()).filter(Boolean),
+                notes: document.getElementById('notes').value,
+                'quote-status': document.getElementById('quote-status').value,
+                'quoted-premium': document.getElementById('quoted-premium').value,
+                'policy-type': document.getElementById('policy-type').value,
+                'policy-number': document.getElementById('policy-number').value,
+                'renewal-date': document.getElementById('renewal-date').value,
+                'premium-amount': document.getElementById('premium-amount').value,
+            };
+
+            const isClient = clients.some(c => c.id === id);
+
+            if(isClient) {
+                const index = clients.findIndex(c => c.id === id);
+                clients[index] = {...clients[index], ...personData};
+            } else {
+                 if (isEditing) {
+                    const index = prospects.findIndex(p => p.id === id);
+                    if (index > -1) prospects[index] = {...prospects[index], ...personData};
+                } else {
+                    prospects.push(personData);
+                }
+            }
+            
+            saveData();
+            closeProspectModal();
+        });
+
+        function openTaskModal(taskToEdit = null) {
+            taskForm.reset();
+            populateTaskLinkDropdown();
+            if (taskToEdit) {
+                taskModalTitle.textContent = 'Edit Task';
+                taskIdInput.value = taskToEdit.id;
+                document.getElementById('taskDescription').value = taskToEdit.description;
+                document.getElementById('taskDueDate').value = taskToEdit.dueDate;
+                document.getElementById('taskPriority').value = taskToEdit.priority;
+                document.getElementById('taskStatus').value = taskToEdit.status;
+                document.getElementById('taskLink').value = taskToEdit.linkedId || '';
+            } else {
+                taskModalTitle.textContent = 'Add New Task';
+                taskIdInput.value = '';
+            }
+            taskModal.classList.remove('hidden');
+        }
+
+        function closeTaskModal() {
+            taskModal.classList.add('hidden');
+        }
+
+        taskForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const id = taskIdInput.value || `t_${new Date().getTime()}`;
+            const isEditing = !!taskIdInput.value;
+
+            const taskData = {
+                id,
+                description: document.getElementById('taskDescription').value,
+                dueDate: document.getElementById('taskDueDate').value,
+                priority: document.getElementById('taskPriority').value,
+                status: document.getElementById('taskStatus').value,
+                linkedId: document.getElementById('taskLink').value,
+            };
+
+            if (isEditing) {
+                const index = tasks.findIndex(t => t.id === id);
+                if (index > -1) tasks[index] = taskData;
+            } else {
+                tasks.push(taskData);
+            }
+            saveData();
+            closeTaskModal();
+        });
+
+        function populateTaskLinkDropdown() {
+            taskLinkSelect.innerHTML = '<option value="">None</option>';
+            const allPeople = [...prospects, ...clients];
+            allPeople.sort((a,b) => a.name.localeCompare(b.name)).forEach(person => {
+                const option = document.createElement('option');
+                option.value = person.id;
+                option.textContent = `${person.name} (${prospects.some(p => p.id === person.id) ? 'Prospect' : 'Client'})`;
+                taskLinkSelect.appendChild(option);
+            });
+        }
+
+
+        // --- CORE LOGIC ---
+        function deletePerson(id, type) {
+            if (confirm(`Are you sure you want to delete this ${type}?`)) {
+                if (type === 'prospect') {
+                    prospects = prospects.filter(p => p.id !== id);
+                } else {
+                    clients = clients.filter(c => c.id !== id);
+                }
+                // Also delete linked tasks
+                tasks = tasks.filter(t => t.linkedId !== id);
+                saveData();
+            }
+        }
+
+        function convertToClient(id) {
+            const prospectIndex = prospects.findIndex(p => p.id === id);
+            if (prospectIndex > -1) {
+                const [prospect] = prospects.splice(prospectIndex, 1);
+                prospect.status = 'Converted';
+                clients.push(prospect);
+                saveData();
+            }
+        }
+        
+        function deleteTask(id) {
+            if (confirm('Are you sure you want to delete this task?')) {
+                tasks = tasks.filter(t => t.id !== id);
+                saveData();
+            }
+        }
+
+        // --- NAVIGATION ---
+        function switchView(view) {
+            currentView = view;
+            Object.values(panes).forEach(pane => pane.classList.add('hidden'));
+            Object.values(tabs).forEach(tab => tab.classList.remove('border-blue-500', 'text-blue-600', 'dark:text-blue-400'));
+            Object.values(tabs).forEach(tab => tab.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300'));
+
+            panes[view].classList.remove('hidden');
+            tabs[view].classList.add('border-blue-500', 'text-blue-600', 'dark:text-blue-400');
+            tabs[view].classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+            
+            renderAll();
+        }
+        
+        // --- DATA IMPORT/EXPORT ---
+        document.getElementById('importDataBtn').addEventListener('click', () => {
+            document.getElementById('importFile').click();
+        });
+        
+        document.getElementById('importFile').addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        if (data.prospects && data.clients && data.tasks) {
+                            prospects = data.prospects;
+                            clients = data.clients;
+                            tasks = data.tasks;
+                            saveData();
+                            alert('Data imported successfully!');
+                        } else {
+                            alert('Invalid data file format.');
+                        }
+                    } catch (error) {
+                         alert('Error reading file.');
+                    }
+                };
+                reader.readAsText(file);
+            }
+        });
+
+        document.getElementById('exportDataBtn').addEventListener('click', () => {
+            const data = JSON.stringify({ prospects, clients, tasks }, null, 2);
+            const blob = new Blob([data], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const date = new Date().toISOString().slice(0, 10);
+            a.download = `client-data-backup-${date}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        // --- EVENT LISTENERS ---
+        document.getElementById('addProspectBtn').addEventListener('click', () => openProspectModal());
+        document.getElementById('cancelProspect').addEventListener('click', closeProspectModal);
+        
+        document.getElementById('addTaskBtn').addEventListener('click', () => openTaskModal());
+        document.getElementById('cancelTask').addEventListener('click', closeTaskModal);
+
+        searchInput.addEventListener('input', () => renderAll());
+        mobileSearchInput.addEventListener('input', (e) => {
+            searchInput.value = e.target.value;
+            renderAll();
+        });
+        
+        Object.keys(tabs).forEach(key => {
+            tabs[key].addEventListener('click', (e) => {
+                e.preventDefault();
+                switchView(key);
+            });
+        });
+        
+        document.getElementById('compare-selected').addEventListener('click', displayComparisonResults);
+
+        // Accordion logic
+        prospectModal.addEventListener('click', function(e) {
+            const header = e.target.closest('.accordion-trigger');
+            if (header) {
+                const content = header.nextElementSibling;
+                const svg = header.querySelector('svg');
+                if (content.style.maxHeight) {
+                    content.style.maxHeight = null;
+                    svg.style.transform = 'rotate(0deg)';
+                } else {
+                    content.style.maxHeight = content.scrollHeight + "px";
+                    svg.style.transform = 'rotate(180deg)';
+                }
+            }
+        });
+        
+        // Theme toggle
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const lightIcon = document.getElementById('theme-icon-light');
+        const darkIcon = document.getElementById('theme-icon-dark');
+        
+        const applyTheme = (theme) => {
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+                lightIcon.classList.add('hidden');
+                darkIcon.classList.remove('hidden');
+            } else {
+                document.documentElement.classList.remove('dark');
+                lightIcon.classList.remove('hidden');
+                darkIcon.classList.add('hidden');
+            }
+        }
+        
+        themeToggleBtn.addEventListener('click', () => {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            applyTheme(isDark ? 'dark' : 'light');
+        });
+
+        // --- INITIALIZATION ---
+        function init() {
+            loadData();
+            switchView('prospects');
+            
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            applyTheme(savedTheme);
+        }
+
+        init();
+    });
+    </script>
+</body>
+</html>
